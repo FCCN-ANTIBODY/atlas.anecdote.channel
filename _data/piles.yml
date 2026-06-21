@@ -4,12 +4,19 @@
 # the client fetches each map per-slice in the browser. No data is fetched at
 # build time, so updating a pile's data never rebuilds the site.
 #
-# Each entry needs an `id` and `name`, plus a source for its published map:
-#   url:     a remote, public XML map (the canonical contract artifact), ideally
-#            Cloudflare-fronted so its cache TTL governs per-slice freshness
-#   fixture: a served local map (used for dev / before a sink is live)
-# If both are present, the client tries `url` first and falls back to `fixture`.
+# Atlas is a GATEWAY: it only ever serves pile data from its OWN domain, never by
+# reaching into a pile's repo. A consenting pile places its artifact onto Atlas
+# (see CONTRACT.md "Gateway placement"); Atlas serves it at a stable path which
+# both this runtime client and downstream aggregators read.
+#
+# Each entry needs:
+#   id:    stable slug, also the placement path segment
+#   name:  human-readable label
+#   level: region tier (district | city | county | … ) — carried for aggregators
+#   map:   the Atlas-hosted path where the gateway places this pile's artifact.
+#          A committed seed lives at this path so the slice renders before (or
+#          without) live placement; production placement overrides it out-of-band.
 - id: cd04-q1
   name: "Colorado House District 4 — Question 1"
-  # url: "https://raw.githubusercontent.com/tiliv/public-notes/main/parts/poll/map.xml"
-  fixture: "/samples/cd04-map.xml"
+  level: district
+  map: "/piles/cd04-q1/map.xml"

@@ -45,25 +45,55 @@ file renders human-readably when opened directly — the intentional "map".
 **Raw per-option vote counts are intentionally never published** — only coarse tiers — to keep
 the anti-popularity design intact.
 
-## Required producer-side changes (not in this repo)
+## Gateway placement (private sink → pile release → Atlas)
 
-The reference sink (`tiliv/public-notes` PR #2) currently emits `parts/poll/answers.json`
-hourly. To satisfy this contract it needs:
+Atlas never reaches into a pile's repo. Instead, a pile that **consents** to be reflected
+*places* its artifact onto Atlas, and Atlas serves it from its own domain:
 
-1. **Emit the map.** Have `bin/poll-rollup.mjs` (or a small follow-on step) render `map.xml`
-   (+ a committed `map.xsl`) from `answers.json` and the poll manifest, published at a stable
-   public URL.
-2. **Cadence ~10 min.** Change `.github/workflows/poll-rollup.yml` schedule toward
-   `*/10 * * * *` (note: Actions cron is best-effort and may drift).
-3. **Serve the map cacheably.** Publish at a stable public URL and, ideally, front it with
-   Cloudflare so its cache TTL sets per-slice freshness. **No notification to Atlas is required** —
-   Atlas fetches the map at runtime, so a data update is picked up passively on the next client
-   fetch once the CDN TTL lapses. (A `repository_dispatch: pile-updated` is no longer needed; a
-   pile only needs to dispatch if a connector is registering/removing piles out of band.)
+```
+ private sink ──▶ rollup (~10 min) ──▶ pile's own release (raw artifact)
+                                            │  consented push (pile holds an
+                                            ▼  Atlas-scoped placement credential)
+                              Atlas: /piles/<id>/map.xml   (Cloudflare-served, cached)
+                                            │
+                         ┌──────────────────┴───────────────────┐
+                         ▼                                       ▼
+        Atlas runtime browser (assets/atlas.js)      downstream aggregators
+```
+
+What this preserves:
+
+- **Consent / gateway.** The pile pushes; Atlas does not pull. Only a pile holding an
+  Atlas-granted placement credential can publish, and only to its own `/piles/<id>/` path.
+- **One surface.** The browser and every aggregator read the *same* Atlas-hosted URL — so
+  "the aggregator knows exactly where Atlas gets its data."
+- **Narrow builds.** Placement is out-of-band of Atlas's Jekyll/Pages build, so N piles each
+  updating every ~10 min never trigger N site rebuilds. The build changes only when the shell
+  or the registry (`_data/piles.yml`) changes.
+
+### Serving substrate
+
+`/piles/<id>/map.xml` is served by Cloudflare from a store that placement writes to,
+**independent of the Pages build**. Recommended: a Cloudflare Pages Function backed by an R2
+bucket — the pile `PUT`s `piles/<id>/map.xml` into R2 with a scoped token, and the Function
+serves it with an explicit `Cache-Control`. Lower-infra alternative: a dedicated `piles-data`
+branch the pile commits to, fronted by a Cloudflare Worker. (Substrate is the one open wiring
+decision; the consumer contract above is identical either way.) A committed seed at
+`/piles/<id>/map.xml` in this repo renders the slice for local dev and before first placement.
+
+### Producer-side checklist (lives in the pile repos, not here)
+
+1. **Emit the map.** Render `map.xml` (+ `map.xsl`) from `answers.json` and the poll manifest.
+2. **Cadence ~10 min.** Roll up on roughly the cadence you want slices to refresh at.
+3. **Place onto Atlas.** After the rollup, push `map.xml`/`map.xsl` to Atlas's store at
+   `piles/<id>/…` with the Atlas-granted placement credential. No `repository_dispatch` to
+   Atlas is needed — the runtime browser picks up new data on its next fetch once the CDN TTL
+   lapses.
 
 ## Consumer side (this repo)
 
 Atlas reflects any map matching this schema **at runtime** via `assets/atlas.js`, driven by the
-`piles.json` manifest that the build renders from `_data/piles.yml`. The build itself fetches no
-data — it only emits the shell + manifest. Adding a pile is just a registry entry pointing `url:`
-at its published map (a one-time shell rebuild); ongoing data updates need no rebuild.
+`piles.json` manifest the build renders from `_data/piles.yml`. Each registry entry carries a
+`map:` path on Atlas's **own** domain; the client fetches that path same-origin. The build
+fetches no data — it only emits the shell + manifest. Adding or removing a pile rebuilds the
+shell once; ongoing data updates need no rebuild.

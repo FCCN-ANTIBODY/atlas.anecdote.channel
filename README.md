@@ -11,24 +11,28 @@ By convention the repo name is the DNS name served via GitHub Pages custom domai
 ## How data flows
 
 ```
- respondents ──▶ private sink issue ──▶ rollup (with sink token, ~10 min)
-                 (moderation isolation)        │
-                                               ▼
-                                  public XML+XSL map  (the contract artifact)
-                                               │  (CDN / Cloudflare cache TTL)
-                                               ▼
-                     browser fetches each map per-slice ──▶ Atlas (static shell)
+ respondents ──▶ private sink ──▶ rollup (~10 min) ──▶ pile's own release
+                 (moderation)                                │ consented push
+                                                             ▼ (pile → Atlas)
+                                         Atlas: /piles/<id>/map.xml  (Cloudflare-served)
+                                                             │
+                                        ┌────────────────────┴───────────────┐
+                                        ▼                                     ▼
+                          runtime browser (per-slice fetch)        downstream aggregators
 ```
 
 - **Private sink, public artifacts.** Raw answers never leave the pile's private sink. The
   rollup emits only a small, deliberately *coarse* public map (tiers, not raw counts), so Atlas
   only ever sees approved, low-bandwidth output. **Atlas needs no read token.**
+- **Atlas is a gateway.** A pile that *consents* to be reflected **places** its artifact onto
+  Atlas; Atlas serves it from its own domain at `/piles/<id>/map.xml`. The browser and any
+  aggregator only ever read Atlas — never a pile's repo. See [`CONTRACT.md`](CONTRACT.md).
 - **The map is the contract.** A self-describing XML document with a linked XSL stylesheet (so
-  opening it raw in a browser renders human-readable). See [`CONTRACT.md`](CONTRACT.md).
+  opening it raw in a browser renders human-readable).
 - **Runtime-driven, per slice.** Atlas builds only a static shell + a small `piles.json` registry.
-  The browser fetches each pile's map **at runtime**, so a pile's ~10-minute data update is
-  available **passively, without rebuilding this site**. Freshness is governed by each map's
-  CDN/Cloudflare cache TTL, and a per-slice badge surfaces how stale a slice is.
+  The browser fetches each pile's Atlas-hosted map **at runtime**, so a pile's ~10-minute data
+  update is available **passively, without rebuilding this site**. Freshness follows the map's
+  Cloudflare cache TTL, and a per-slice badge surfaces how stale a slice is.
 
 > **Why not rebuild?** With many piles each updating every ~10 min, build-per-update doesn't scale —
 > deploys serialize and contend for free CI. Moving data consumption to runtime decouples build
@@ -44,10 +48,10 @@ manifest; the reflecting happens in the browser at runtime.
 
 | Path | Purpose |
 | --- | --- |
-| `_data/piles.yml` | Registry of piles to reflect (`url:` and/or `fixture:`) |
+| `_data/piles.yml` | Registry of piles to reflect (`id`, `name`, `level`, Atlas-hosted `map:` path) |
 | `piles.json` | Build-time manifest rendered from the registry; read by the client |
-| `assets/atlas.js` | Runtime client: fetch → parse XML → render each slice + freshness |
-| `samples/` | Served sample map (`cd04-map.xml` + `map.xsl`) for offline / pre-sink fallback |
+| `assets/atlas.js` | Runtime client: fetch each Atlas-hosted map → parse XML → render slice + freshness |
+| `piles/<id>/` | Committed seed map (`map.xml` + `map.xsl`) served until the gateway places live data |
 | `_layouts/`, `index.md`, `assets/atlas.css` | The shell |
 | `.github/workflows/deploy.yml` | Build + deploy, triggered by push / manual only |
 
@@ -58,12 +62,14 @@ Add an entry to `_data/piles.yml` (a registry change, so a one-time build picks 
 ```yaml
 - id: my-poll
   name: "Human-readable name"
-  url: "https://raw.githubusercontent.com/owner/pile/main/parts/poll/map.xml"
-  fixture: "/samples/cd04-map.xml"   # optional offline fallback (a served path)
+  level: district
+  map: "/piles/my-poll/map.xml"   # Atlas-hosted path the gateway places data at
 ```
 
-The client fetches `url` first; `fixture` is used if the fetch fails or no URL is set. Adding or
-removing a pile rebuilds the shell once; ongoing **data** updates need no rebuild.
+Commit a seed map at that path so the slice renders before first placement. The client always
+fetches the Atlas-hosted `map` path same-origin; the consenting pile keeps it fresh by placing
+data there out-of-band (see [`CONTRACT.md`](CONTRACT.md) → Gateway placement). Adding or removing
+a pile rebuilds the shell once; ongoing **data** updates need no rebuild.
 
 ## Develop
 
@@ -72,13 +78,14 @@ bundle install
 bin/jekyll serve             # http://127.0.0.1:4000
 ```
 
-The site renders offline against the served sample map, so no live sink is required.
+The site renders offline against the committed seed maps under `piles/`, so no live sink is required.
 
 ## Operations (one-time)
 
-- Set **Settings → Pages → Source** to **GitHub Actions**.
+- Set **Settings → Pages → Source** to **GitHub Actions** (serves the shell).
 - Point DNS for `atlas.anecdote.channel` at GitHub Pages and set it as the custom domain
-  (the `CNAME` file is already committed).
-- For caching control, front each pile's map URL with Cloudflare and set its cache TTL to the
-  desired per-slice freshness; the runtime client and its staleness badge follow whatever the CDN
-  serves. Public piles need no token.
+  (the `CNAME` file is already committed). See [`DNS.md`](DNS.md).
+- Stand up the gateway serving substrate for `/piles/*` (Cloudflare Pages Function + R2, or a
+  `piles-data` branch + Worker — see [`CONTRACT.md`](CONTRACT.md) → Serving substrate), and issue
+  each consenting pile a scoped placement credential. Cloudflare's cache TTL on `/piles/*` sets
+  per-slice freshness; the runtime client and its staleness badge follow whatever the CDN serves.

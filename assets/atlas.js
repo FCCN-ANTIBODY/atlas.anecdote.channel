@@ -7,8 +7,12 @@
 // freshness is governed by each map's CDN/Cloudflare cache TTL, and a staleness
 // badge surfaces how old each slice is.
 //
-// The XML parse mirrors the old build-time Ruby generator field-for-field; only
-// the consumption moved from REXML (build) to DOMParser (runtime).
+// Atlas is a GATEWAY: every map is fetched from Atlas's OWN domain (the `map`
+// path the gateway places it at), never from a pile's repo. That keeps the
+// browser — and downstream aggregators — reading a single, consented, Atlas-
+// hosted surface. The XML parse mirrors the old build-time Ruby generator
+// field-for-field; only the consumption moved from REXML (build) to DOMParser
+// (runtime).
 
 (function () {
   "use strict";
@@ -24,20 +28,12 @@
     });
   }
 
-  // url first (the canonical, Cloudflare-fronted artifact); fall back to the
-  // served fixture so dev / pre-sink piles still render.
+  // Fetch the pile's map from its Atlas-hosted path (same-origin). The gateway
+  // is responsible for placing fresh data there; a committed seed lives at the
+  // same path so a slice still renders before/without live placement.
   function fetchMap(pile) {
-    if (pile.url) {
-      return getText(pile.url).catch(function (e) {
-        if (pile.fixture) {
-          console.warn("Atlas: fetch failed for " + pile.id + " (" + e.message + "); trying fixture");
-          return getText(pile.fixture);
-        }
-        throw e;
-      });
-    }
-    if (pile.fixture) return getText(pile.fixture);
-    return Promise.reject(new Error("no url or fixture for " + pile.id));
+    if (!pile.map) return Promise.reject(new Error("no map path for " + pile.id));
+    return getText(pile.map);
   }
 
   // --- parse (mirrors atlas_reflection.rb#parse_map) ---------------------
