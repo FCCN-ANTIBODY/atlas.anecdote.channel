@@ -64,7 +64,9 @@ Atlas never reaches into a pile's repo. Instead, a pile that **consents** to be 
 What this preserves:
 
 - **Consent / gateway.** The pile pushes; Atlas does not pull. A consenting pile publishes by
-  pushing **signed** commits to its **own branch** (`pile/<scope>/<id>`) — and nowhere else.
+  pushing **signed** commits to its **own branch** (`pile/<scope>/<id>`) — and nowhere else. Atlas's
+  half of this — that it serves only what a pile placed and honors any terms riding with it — is
+  attested in [`CONSTITUTION.md`](CONSTITUTION.md).
 - **One surface.** The browser and every aggregator read the *same* Atlas-hosted URL — so
   "the aggregator knows exactly where Atlas gets its data."
 - **Narrow builds.** Placement is out-of-band of Atlas's Jekyll/Pages build, so N piles each

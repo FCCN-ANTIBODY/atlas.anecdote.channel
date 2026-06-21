@@ -8,6 +8,14 @@ It is one connector in a constellation of `*.anecdote.channel` repos: "Civic Nod
 By convention the repo name is the DNS name served via GitHub Pages custom domain
 (`atlas.anecdote.channel`); Cloudflare will later front it for caching-header control.
 
+## Atlas's constitution
+
+Atlas governs itself by a single document, [`CONSTITUTION.md`](CONSTITUTION.md), served live at
+[`/CONSTITUTION.md`](https://atlas.anecdote.channel/CONSTITUTION.md). It is Atlas's whole law — what
+it wants and what it attests it will do. The text is mutable and meant to be re-fetched: a
+remembered copy does not bind. Atlas attests only to conduct it performs **today**; new conduct is
+written there first, before it happens.
+
 ## How data flows
 
 ```

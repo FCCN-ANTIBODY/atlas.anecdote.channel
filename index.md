@@ -13,6 +13,9 @@ Atlas builds only a static shell. The map for each pile is fetched **at runtime,
 pile's data update is available passively without rebuilding this site; a freshness badge shows how
 recently each slice was published.
 
+Atlas binds itself to one document: its [constitution](/CONSTITUTION.md) — what it will and won't do
+with what piles place here.
+
 <div id="atlas">
   <noscript>
     This browser reflects piles at runtime and needs JavaScript. The registry is at
