@@ -1,0 +1,14 @@
+# Cloudflare Worker that serves Atlas's /piles/* gateway from the `piles-data`
+# branch. Deploy with: wrangler deploy (from this directory).
+#
+# Requires the Atlas domain to be proxied through Cloudflare (orange-cloud) so
+# the route can intercept; everything outside /piles/* falls through to the
+# GitHub Pages origin. Set account_id via `CLOUDFLARE_ACCOUNT_ID` or `wrangler`.
+name = "atlas-piles-gateway"
+main = "worker.js"
+compatibility_date = "2026-06-01"
+
+# Intercept only the data path on the Atlas host. The shell stays on Pages.
+routes = [
+  { pattern = "atlas.anecdote.channel/piles/*", zone_name = "anecdote.channel" }
+]

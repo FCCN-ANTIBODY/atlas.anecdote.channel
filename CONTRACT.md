@@ -71,15 +71,38 @@ What this preserves:
   updating every ~10 min never trigger N site rebuilds. The build changes only when the shell
   or the registry (`_data/piles.yml`) changes.
 
-### Serving substrate
+### Serving substrate — `piles-data` branch + Cloudflare Worker
 
-`/piles/<id>/map.xml` is served by Cloudflare from a store that placement writes to,
-**independent of the Pages build**. Recommended: a Cloudflare Pages Function backed by an R2
-bucket — the pile `PUT`s `piles/<id>/map.xml` into R2 with a scoped token, and the Function
-serves it with an explicit `Cache-Control`. Lower-infra alternative: a dedicated `piles-data`
-branch the pile commits to, fronted by a Cloudflare Worker. (Substrate is the one open wiring
-decision; the consumer contract above is identical either way.) A committed seed at
-`/piles/<id>/map.xml` in this repo renders the slice for local dev and before first placement.
+`/piles/<id>/map.xml` is served by a Cloudflare Worker, **independent of the Pages build**:
+
+- **Store.** A dedicated orphan branch `piles-data` in this repo holds placed artifacts at
+  `piles/<id>/map.xml` (+ `map.xsl`). The deploy workflow ignores that branch, so a placement
+  never triggers a site rebuild — builds stay narrow.
+- **Serve.** The Worker (`workers/piles-gateway/`) maps `atlas.anecdote.channel/piles/*` to the
+  raw `piles-data` content, sets `Cache-Control` (per-slice freshness) and
+  `Access-Control-Allow-Origin: *` (so cross-origin aggregators can read it), and falls back to
+  the Pages origin — the committed seed — when a slice hasn't been placed yet.
+- **Placement (the consented push).** A pile writes only its own `piles/<id>/` path on
+  `piles-data`, using a credential Atlas grants it: a token with **`contents:write` on this repo**
+  (ideally constrained to the `piles-data` branch with a ruleset; protect `main` so the token
+  cannot touch the shell). Example pile-side step, after rendering `map.xml`/`map.xsl`:
+
+  ```sh
+  ID=cd04-q1
+  PRIOR=$(gh api "repos/FCCN-ANTIBODY/atlas.anecdote.channel/contents/piles/$ID/map.xml?ref=piles-data" \
+            --jq .sha 2>/dev/null || true)
+  gh api --method PUT \
+    "repos/FCCN-ANTIBODY/atlas.anecdote.channel/contents/piles/$ID/map.xml" \
+    -f message="place $ID $(date -u +%FT%TZ)" \
+    -f branch=piles-data \
+    -f content="$(base64 -w0 map.xml)" \
+    ${PRIOR:+-f sha="$PRIOR"}
+  ```
+
+  (The `sha` lookup is needed only to update an existing file; omit on first placement.)
+
+A committed seed at `/piles/<id>/map.xml` in this repo renders the slice for local dev (no Worker)
+and in production until the first placement lands on `piles-data`.
 
 ### Producer-side checklist (lives in the pile repos, not here)
 

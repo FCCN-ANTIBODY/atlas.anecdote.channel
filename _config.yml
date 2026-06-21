@@ -19,6 +19,7 @@ exclude:
   - Gemfile.lock
   - bin/
   - vendor/
+  - workers/
 
 # Pretty URLs (/foo/ instead of /foo.html).
 permalink: pretty

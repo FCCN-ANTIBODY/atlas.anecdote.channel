@@ -85,7 +85,14 @@ The site renders offline against the committed seed maps under `piles/`, so no l
 - Set **Settings → Pages → Source** to **GitHub Actions** (serves the shell).
 - Point DNS for `atlas.anecdote.channel` at GitHub Pages and set it as the custom domain
   (the `CNAME` file is already committed). See [`DNS.md`](DNS.md).
-- Stand up the gateway serving substrate for `/piles/*` (Cloudflare Pages Function + R2, or a
-  `piles-data` branch + Worker — see [`CONTRACT.md`](CONTRACT.md) → Serving substrate), and issue
-  each consenting pile a scoped placement credential. Cloudflare's cache TTL on `/piles/*` sets
-  per-slice freshness; the runtime client and its staleness badge follow whatever the CDN serves.
+- Stand up the gateway: create an empty orphan `piles-data` branch, deploy the Worker in
+  `workers/piles-gateway/` (`wrangler deploy`) so it serves `/piles/*`, and issue each consenting
+  pile a `contents:write` placement credential scoped to `piles-data`. See
+  [`CONTRACT.md`](CONTRACT.md) → Serving substrate. Cloudflare's cache TTL on `/piles/*` sets
+  per-slice freshness; the runtime client and its staleness badge follow whatever the edge serves.
+
+  ```sh
+  # one-time: create the empty gateway store branch
+  git switch --orphan piles-data && git commit --allow-empty -m "init piles-data" \
+    && git push -u origin piles-data
+  ```
