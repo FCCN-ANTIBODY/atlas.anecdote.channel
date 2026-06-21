@@ -13,6 +13,7 @@ plugins: []
 exclude:
   - _fixtures/
   - CONTRACT.md
+  - DNS.md
   - README.md
   - Gemfile
   - Gemfile.lock
