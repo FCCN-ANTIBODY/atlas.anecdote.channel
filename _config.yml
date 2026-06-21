@@ -9,9 +9,9 @@ baseurl: ""
 # enable any plugins (the reflection generator in _plugins/ loads automatically).
 plugins: []
 
-# Fixtures and docs are inputs/notes, not site pages.
+# Docs are notes, not site pages. The sample map under samples/ IS served so the
+# runtime client can fall back to it offline / before a live sink exists.
 exclude:
-  - _fixtures/
   - CONTRACT.md
   - DNS.md
   - README.md
@@ -20,5 +20,5 @@ exclude:
   - bin/
   - vendor/
 
-# Pretty URLs for generated pile pages (/cd04-q1/ instead of /cd04-q1.html).
+# Pretty URLs (/foo/ instead of /foo.html).
 permalink: pretty

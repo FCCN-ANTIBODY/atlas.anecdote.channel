@@ -1,10 +1,15 @@
 # Registry of data-piles Atlas reflects.
 #
+# At build time this becomes piles.json (the manifest the runtime client reads);
+# the client fetches each map per-slice in the browser. No data is fetched at
+# build time, so updating a pile's data never rebuilds the site.
+#
 # Each entry needs an `id` and `name`, plus a source for its published map:
-#   url:     a remote, public XML map (the canonical contract artifact)
-#   fixture: a local map under _fixtures/ (used for dev / before a sink is live)
-# If both are present, `url` is tried first and `fixture` is the offline fallback.
+#   url:     a remote, public XML map (the canonical contract artifact), ideally
+#            Cloudflare-fronted so its cache TTL governs per-slice freshness
+#   fixture: a served local map (used for dev / before a sink is live)
+# If both are present, the client tries `url` first and falls back to `fixture`.
 - id: cd04-q1
   name: "Colorado House District 4 — Question 1"
   # url: "https://raw.githubusercontent.com/tiliv/public-notes/main/parts/poll/map.xml"
-  fixture: "_fixtures/cd04-map.xml"
+  fixture: "/samples/cd04-map.xml"

@@ -1,13 +1,12 @@
 name: Build & Deploy Atlas
 
 on:
-  # Site/template changes.
+  # Shell/template/registry changes only. Data slices are fetched at runtime
+  # (see assets/atlas.js), so a pile's data update never rebuilds this site —
+  # that decouples build cadence from the ~10-minute, per-pile data trickle.
   push:
   # Manual rebuild.
   workflow_dispatch:
-  # The 10-minute trickle: a data-pile's sink fires this after each rollup.
-  repository_dispatch:
-    types: [pile-updated]
 
 # Allow the deploy job to publish to GitHub Pages.
 permissions:
@@ -33,10 +32,11 @@ jobs:
           bundler-cache: true
 
       - name: Build site
-        env:
-          # Public artifacts need no token; this scaffolds future private piles.
-          ATLAS_PILE_TOKEN: ${{ secrets.ATLAS_PILE_TOKEN }}
-        run: bundle exec jekyll build --trace
+        # Build only the static shell + the piles.json manifest; no data fetch
+        # happens at build time. Use the committed binstub: bare
+        # `bundle exec jekyll` fails to resolve the executable under the Bundler
+        # 4.0.9 pinned in Gemfile.lock.
+        run: bin/jekyll build --trace
 
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -45,12 +45,11 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    # Only publish from the default branch or from explicit dispatch triggers;
-    # feature-branch pushes validate the build above without deploying.
+    # Only publish from the default branch or a manual run; feature-branch
+    # pushes validate the build above without deploying.
     if: >-
       github.ref == 'refs/heads/main' ||
-      github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'repository_dispatch'
+      github.event_name == 'workflow_dispatch'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

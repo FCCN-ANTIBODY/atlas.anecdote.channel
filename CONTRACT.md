@@ -55,21 +55,15 @@ hourly. To satisfy this contract it needs:
    public URL.
 2. **Cadence ~10 min.** Change `.github/workflows/poll-rollup.yml` schedule toward
    `*/10 * * * *` (note: Actions cron is best-effort and may drift).
-3. **Notify Atlas.** After publishing, `POST` a `repository_dispatch` to each subscribed
-   connector:
-
-   ```sh
-   curl -sS -X POST \
-     -H "Authorization: Bearer $ATLAS_DISPATCH_TOKEN" \
-     -H "Accept: application/vnd.github+json" \
-     https://api.github.com/repos/fccn-antibody/atlas.anecdote.channel/dispatches \
-     -d '{"event_type":"pile-updated","client_payload":{"poll_id":"cd04-q1"}}'
-   ```
-
-   `ATLAS_DISPATCH_TOKEN` is the **sink's** secret (a token with permission to dispatch to the
-   connector). Atlas holds no secret for public piles.
+3. **Serve the map cacheably.** Publish at a stable public URL and, ideally, front it with
+   Cloudflare so its cache TTL sets per-slice freshness. **No notification to Atlas is required** —
+   Atlas fetches the map at runtime, so a data update is picked up passively on the next client
+   fetch once the CDN TTL lapses. (A `repository_dispatch: pile-updated` is no longer needed; a
+   pile only needs to dispatch if a connector is registering/removing piles out of band.)
 
 ## Consumer side (this repo)
 
-Atlas reflects any map matching this schema via `_plugins/atlas_reflection.rb`, driven by
-`_data/piles.yml`. Adding a pile is just a registry entry pointing `url:` at its published map.
+Atlas reflects any map matching this schema **at runtime** via `assets/atlas.js`, driven by the
+`piles.json` manifest that the build renders from `_data/piles.yml`. The build itself fetches no
+data — it only emits the shell + manifest. Adding a pile is just a registry entry pointing `url:`
+at its published map (a one-time shell rebuild); ongoing data updates need no rebuild.

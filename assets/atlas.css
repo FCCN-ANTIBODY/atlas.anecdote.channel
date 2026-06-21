@@ -48,4 +48,11 @@ a { color: var(--accent); }
 
 .rejected { color: var(--muted); font-size: 0.9rem; }
 
+/* Runtime slice state: freshness of each fetched map + load/error states. */
+.freshness { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.1rem 0.5rem; border-radius: 1rem; vertical-align: middle; }
+.freshness.is-fresh { background: #e6f7ec; color: #1f7a44; }
+.freshness.is-stale { background: #fdecea; color: #a23b1e; }
+.pile-index li.loading { color: var(--muted); }
+.meta.error, .pile-index li.error { color: #a23b1e; }
+
 .site-footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.8rem; }
