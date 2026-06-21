@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="map.xsl"?>
+<map poll-id="cd04-q1" updated-at="2026-06-21T00:00:00Z" version="1">
+  <district id="cd04" name="Colorado House District 4"/>
+  <question>Should the city expand protected bike lanes on College Avenue?</question>
+  <options>
+    <option id="a" label="Yes, expand them"><tier>high</tier></option>
+    <option id="b" label="No, keep as-is"><tier>low</tier></option>
+    <option id="c" label="Only with more study"><tier>med</tier></option>
+  </options>
+  <totals accepted="247"/>
+  <rejected geo="12" sig="3" malformed="1" other="5"/>
+  <sampling low="b" mid="c" high="a"/>
+</map>

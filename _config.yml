@@ -1,0 +1,23 @@
+title: Atlas
+description: >-
+  A reflection API that browses moderated snapshots ("maps") published by
+  anecdote.channel data-piles.
+url: "https://atlas.anecdote.channel"
+baseurl: ""
+
+# Custom build: we run `jekyll build` ourselves in Actions, so we are free to
+# enable any plugins (the reflection generator in _plugins/ loads automatically).
+plugins: []
+
+# Fixtures and docs are inputs/notes, not site pages.
+exclude:
+  - _fixtures/
+  - CONTRACT.md
+  - README.md
+  - Gemfile
+  - Gemfile.lock
+  - bin/
+  - vendor/
+
+# Pretty URLs for generated pile pages (/cd04-q1/ instead of /cd04-q1.html).
+permalink: pretty
