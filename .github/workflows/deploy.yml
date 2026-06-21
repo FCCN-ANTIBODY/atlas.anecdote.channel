@@ -6,9 +6,10 @@ on:
   # that decouples build cadence from the ~10-minute, per-pile data trickle.
   push:
     branches-ignore:
-      # The gateway store: piles place artifacts here out-of-band, and these
-      # commits must never trigger a Pages build (keeps builds narrow).
-      - piles-data
+      # Per-pile data branches: piles push signed artifacts to their own
+      # pile/<scope>/<id> ref out-of-band, and these commits must never trigger a
+      # Pages build (keeps builds narrow — N piles never cause N rebuilds).
+      - 'pile/**'
   # Manual rebuild.
   workflow_dispatch:
 

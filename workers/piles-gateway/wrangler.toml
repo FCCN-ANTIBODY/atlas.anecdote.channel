@@ -1,5 +1,5 @@
-# Cloudflare Worker that serves Atlas's /piles/* gateway from the `piles-data`
-# branch. Deploy with: wrangler deploy (from this directory).
+# Cloudflare Worker that serves Atlas's /piles/* gateway from each pile's own
+# pile/<scope>/<id> branch (resolved via /piles.json). Deploy: wrangler deploy.
 #
 # Requires the Atlas domain to be proxied through Cloudflare (orange-cloud) so
 # the route can intercept; everything outside /piles/* falls through to the

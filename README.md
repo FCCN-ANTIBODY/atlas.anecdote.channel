@@ -85,14 +85,13 @@ The site renders offline against the committed seed maps under `piles/`, so no l
 - Set **Settings → Pages → Source** to **GitHub Actions** (serves the shell).
 - Point DNS for `atlas.anecdote.channel` at GitHub Pages and set it as the custom domain
   (the `CNAME` file is already committed). See [`DNS.md`](DNS.md).
-- Stand up the gateway: create an empty orphan `piles-data` branch, deploy the Worker in
-  `workers/piles-gateway/` (`wrangler deploy`) so it serves `/piles/*`, and issue each consenting
-  pile a `contents:write` placement credential scoped to `piles-data`. See
-  [`CONTRACT.md`](CONTRACT.md) → Serving substrate. Cloudflare's cache TTL on `/piles/*` sets
-  per-slice freshness; the runtime client and its staleness badge follow whatever the edge serves.
+- Stand up the gateway (see [`CONTRACT.md`](CONTRACT.md) → Serving substrate):
+  - Deploy the Worker in `workers/piles-gateway/` (`wrangler deploy`) so it serves `/piles/*`.
+  - Add a repository **ruleset on `pile/**`** that **requires signed commits**, and a ruleset on
+    **`main`** restricting pushes so placement credentials can't touch the shell.
+  - For each consenting pile: register its `branch` + `signer` in `_data/piles.yml`, and issue it a
+    `contents:write` credential authorized for `pile/**`. Each pile creates its own branch on first
+    signed push — there is no shared data branch to pre-create.
 
-  ```sh
-  # one-time: create the empty gateway store branch
-  git switch --orphan piles-data && git commit --allow-empty -m "init piles-data" \
-    && git push -u origin piles-data
-  ```
+  Cloudflare's cache TTL on `/piles/*` sets per-slice freshness; the runtime client and its
+  staleness badge follow whatever the edge serves.

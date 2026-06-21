@@ -63,55 +63,65 @@ Atlas never reaches into a pile's repo. Instead, a pile that **consents** to be 
 
 What this preserves:
 
-- **Consent / gateway.** The pile pushes; Atlas does not pull. Only a pile holding an
-  Atlas-granted placement credential can publish, and only to its own `/piles/<id>/` path.
+- **Consent / gateway.** The pile pushes; Atlas does not pull. A consenting pile publishes by
+  pushing **signed** commits to its **own branch** (`pile/<scope>/<id>`) — and nowhere else.
 - **One surface.** The browser and every aggregator read the *same* Atlas-hosted URL — so
   "the aggregator knows exactly where Atlas gets its data."
 - **Narrow builds.** Placement is out-of-band of Atlas's Jekyll/Pages build, so N piles each
   updating every ~10 min never trigger N site rebuilds. The build changes only when the shell
   or the registry (`_data/piles.yml`) changes.
 
-### Serving substrate — `piles-data` branch + Cloudflare Worker
+### Serving substrate — branch per pile + Cloudflare Worker
 
-`/piles/<id>/map.xml` is served by a Cloudflare Worker, **independent of the Pages build**:
+Each pile owns a self-named, prefixed **branch** in this repo (`pile/<scope>/<id>`) that behaves
+as a non-merging parallel namespace. `/piles/<id>/map.xml` is served by a Cloudflare Worker,
+**independent of the Pages build**:
 
-- **Store.** A dedicated orphan branch `piles-data` in this repo holds placed artifacts at
-  `piles/<id>/map.xml` (+ `map.xsl`). The deploy workflow ignores that branch, so a placement
-  never triggers a site rebuild — builds stay narrow.
-- **Serve.** The Worker (`workers/piles-gateway/`) maps `atlas.anecdote.channel/piles/*` to the
-  raw `piles-data` content, sets `Cache-Control` (per-slice freshness) and
-  `Access-Control-Allow-Origin: *` (so cross-origin aggregators can read it), and falls back to
-  the Pages origin — the committed seed — when a slice hasn't been placed yet.
-- **Placement (the consented push).** A pile writes only its own `piles/<id>/` path on
-  `piles-data`, using a credential Atlas grants it: a token with **`contents:write` on this repo**
-  (ideally constrained to the `piles-data` branch with a ruleset; protect `main` so the token
-  cannot touch the shell). Example pile-side step, after rendering `map.xml`/`map.xsl`:
+- **Store.** The pile's branch holds its artifact at the branch **root** (`map.xml` + `map.xsl`).
+  The deploy workflow ignores `pile/**`, so a placement never triggers a site rebuild — builds
+  stay narrow even with N piles each pushing every ~10 min.
+- **Serve.** The Worker (`workers/piles-gateway/`) resolves `id → branch` from the rendered
+  manifest (`/piles.json`, anchored by `_data/piles.yml`), fetches the raw artifact from that
+  branch, sets `Cache-Control` (per-slice freshness) and `Access-Control-Allow-Origin: *` (so
+  cross-origin aggregators can read it), and falls back to the Pages origin — the committed seed —
+  for unknown or not-yet-placed slices.
+- **Custody = signed commits + registry anchor.** A repository **ruleset on `pile/**` requires
+  signed commits**; `_data/piles.yml` records each pile's expected `signer`. Trust is anchored by
+  the registry (which branch + signer is legitimate for a slice); the signature trail is the audit
+  record. Isolation of "only this pile pushes its branch" is by convention — a fine-grained token
+  cannot be branch-scoped, so the placement credential is `contents:write` authorized for `pile/**`
+  while a ruleset on `main` keeps it off the shell. (Hardening paths: a gateway signature-verifier
+  that checks the signer against the registry, or per-pile GitHub Apps for true per-branch ACLs.)
+- **Placement (the consented push).** The pile checks out its own branch and pushes a signed
+  commit — the git-native form of "a branch only it is allowed to push." After rendering
+  `map.xml`/`map.xsl`:
 
   ```sh
-  ID=cd04-q1
-  PRIOR=$(gh api "repos/FCCN-ANTIBODY/atlas.anecdote.channel/contents/piles/$ID/map.xml?ref=piles-data" \
-            --jq .sha 2>/dev/null || true)
-  gh api --method PUT \
-    "repos/FCCN-ANTIBODY/atlas.anecdote.channel/contents/piles/$ID/map.xml" \
-    -f message="place $ID $(date -u +%FT%TZ)" \
-    -f branch=piles-data \
-    -f content="$(base64 -w0 map.xml)" \
-    ${PRIOR:+-f sha="$PRIOR"}
+  BRANCH=pile/colorado/cd04-q1
+  git clone --depth 1 https://github.com/FCCN-ANTIBODY/atlas.anecdote.channel atlas-data
+  cd atlas-data
+  git switch "$BRANCH" 2>/dev/null || git switch --orphan "$BRANCH"
+  cp ../map.xml ../map.xsl .
+  git add map.xml map.xsl
+  git -c user.signingkey="$KEY" commit -S -m "place cd04-q1 $(date -u +%FT%TZ)"
+  git push origin "$BRANCH"
   ```
 
-  (The `sha` lookup is needed only to update an existing file; omit on first placement.)
+  No `repository_dispatch` to Atlas is needed — the runtime browser picks up new data on its next
+  fetch once the CDN TTL lapses. A committed seed at `/piles/<id>/map.xml` renders the slice for
+  local dev (no Worker) and in production until the branch's first placement.
 
-A committed seed at `/piles/<id>/map.xml` in this repo renders the slice for local dev (no Worker)
-and in production until the first placement lands on `piles-data`.
+> **Audit / discovery.** `git ls-remote --heads origin 'pile/*'` enumerates every slice; prefix
+> scoping (`pile/colorado/**`) enumerates a scope subtree. History is retained as a signed audit
+> log; `prune-pile-history.yml` periodically archives a branch's old chain to `archive/<branch>@…`
+> and resets the live ref lean (without rewriting signed commits in place).
 
 ### Producer-side checklist (lives in the pile repos, not here)
 
 1. **Emit the map.** Render `map.xml` (+ `map.xsl`) from `answers.json` and the poll manifest.
 2. **Cadence ~10 min.** Roll up on roughly the cadence you want slices to refresh at.
-3. **Place onto Atlas.** After the rollup, push `map.xml`/`map.xsl` to Atlas's store at
-   `piles/<id>/…` with the Atlas-granted placement credential. No `repository_dispatch` to
-   Atlas is needed — the runtime browser picks up new data on its next fetch once the CDN TTL
-   lapses.
+3. **Place onto Atlas.** After the rollup, push a **signed** commit (`map.xml`/`map.xsl` at the
+   branch root) to the pile's own `pile/<scope>/<id>` branch with the Atlas-granted credential.
 
 ## Consumer side (this repo)
 
