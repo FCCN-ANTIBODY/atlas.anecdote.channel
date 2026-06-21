@@ -1,0 +1,21 @@
+---
+# Build-time manifest: the only thing the build does with the registry is emit
+# this small, cacheable JSON list. The runtime client (assets/atlas.js) reads it
+# to fetch each slice's served `map`; the gateway Worker reads it to resolve a
+# slice's id -> backing `branch`. No network IO at build.
+layout: null
+permalink: /piles.json
+---
+{%- assign piles = site.data.piles -%}
+[
+{%- for pile in piles -%}
+  {
+    "id": {{ pile.id | jsonify }},
+    "name": {{ pile.name | jsonify }},
+    "level": {{ pile.level | jsonify }},
+    "map": {{ pile.map | jsonify }},
+    "branch": {{ pile.branch | jsonify }},
+    "signer": {{ pile.signer | jsonify }}
+  }{%- unless forloop.last -%},{%- endunless -%}
+{%- endfor -%}
+]

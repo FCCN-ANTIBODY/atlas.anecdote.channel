@@ -1,0 +1,63 @@
+name: Build & Deploy Atlas
+
+on:
+  # Shell/template/registry changes only. Data slices are fetched at runtime
+  # (see assets/atlas.js), so a pile's data update never rebuilds this site —
+  # that decouples build cadence from the ~10-minute, per-pile data trickle.
+  push:
+    branches-ignore:
+      # Per-pile data branches: piles push signed artifacts to their own
+      # pile/<scope>/<id> ref out-of-band, and these commits must never trigger a
+      # Pages build (keeps builds narrow — N piles never cause N rebuilds).
+      - 'pile/**'
+  # Manual rebuild.
+  workflow_dispatch:
+
+# Allow the deploy job to publish to GitHub Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never run two deploys at once; let an in-flight run finish (don't cancel,
+# so a dispatch-triggered publish isn't dropped).
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - name: Build site
+        # Build only the static shell + the piles.json manifest; no data fetch
+        # happens at build time. Use the committed binstub: bare
+        # `bundle exec jekyll` fails to resolve the executable under the Bundler
+        # 4.0.9 pinned in Gemfile.lock.
+        run: bin/jekyll build --trace
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    # Only publish from the default branch or a manual run; feature-branch
+    # pushes validate the build above without deploying.
+    if: >-
+      github.ref == 'refs/heads/main' ||
+      github.event_name == 'workflow_dispatch'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

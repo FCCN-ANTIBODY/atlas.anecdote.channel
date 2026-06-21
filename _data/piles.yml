@@ -1,0 +1,29 @@
+# Registry of data-piles Atlas reflects — and the trust anchor for custody.
+#
+# At build time this becomes piles.json (the manifest the runtime client + the
+# gateway Worker read). No data is fetched at build time, so updating a pile's
+# data never rebuilds the site.
+#
+# Atlas is a GATEWAY: it only ever serves pile data from its OWN domain, never by
+# reaching into a pile's repo. Each pile owns a self-named, prefixed BRANCH in
+# this repo (a non-merging parallel namespace) and places its artifact by pushing
+# SIGNED commits to that branch only — see CONTRACT.md "Serving substrate". This
+# registry is the anchor: it declares which branch + signer is legitimate for each
+# slice, while the served `map` path stays stable for the browser and aggregators.
+#
+# Each entry needs:
+#   id:     stable slug, also the served path segment
+#   name:   human-readable label
+#   level:  region tier (district | city | county | … ) — carried for aggregators
+#   map:    the stable Atlas-hosted path the gateway serves this slice at. A
+#           committed seed lives here so the slice renders before first placement.
+#   branch: the pile's own ref the gateway reads live data from (convention
+#           pile/<scope>/<id>); the pile pushes signed commits here, nowhere else.
+#   signer: the SSH/GPG key fingerprint (or identity) Atlas expects to have signed
+#           this branch's commits — the documented/audit anchor for custody.
+- id: cd04-q1
+  name: "Colorado House District 4 — Question 1"
+  level: district
+  map: "/piles/cd04-q1/map.xml"
+  branch: "pile/colorado/cd04-q1"
+  signer: "SHA256:PLACEHOLDER-cd04-q1-ssh-key-fingerprint"
