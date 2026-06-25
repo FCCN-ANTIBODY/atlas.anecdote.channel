@@ -17,6 +17,10 @@ strip_header() { awk 'f||/^#!\/usr\/bin\/env bash$/{f=1;print}' "$1"; }
 
 up="$(mktemp)"; trap 'rm -f "$up"' EXIT
 if [ -n "${DP_LIB:-}" ]; then
+  if [ ! -f "$DP_LIB" ]; then
+    echo "check-pile-lib: SKIP — upstream \$DP_LIB not found ($DP_LIB)" >&2
+    exit 0
+  fi
   cp "$DP_LIB" "$up"
 else
   url="https://raw.githubusercontent.com/FCCN-ANTIBODY/data-pile/main/bin/lib.sh"

@@ -25,7 +25,13 @@ jobs:
       - name: Install age (ssh-keygen, openssl, jq are preinstalled on the runner)
         run: sudo apt-get update && sudo apt-get install -y age
       - name: Clone the data-pile consumer (the real verifier)
-        run: git clone --depth 1 https://github.com/FCCN-ANTIBODY/data-pile ../data-pile
+        # Prefer the matching branch (the producer + consumer change together and ship on the
+        # same branch name); fall back to main once both have merged. data-pile's main does not
+        # carry bin/ until the companion PR lands, so a plain main clone would have no verifier.
+        run: |
+          ref="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          git clone --depth 1 --branch "$ref" https://github.com/FCCN-ANTIBODY/data-pile ../data-pile \
+            || git clone --depth 1 https://github.com/FCCN-ANTIBODY/data-pile ../data-pile
       - name: Crypto core has not drifted from data-pile
         run: DP_LIB=../data-pile/bin/lib.sh bin/check-pile-lib
       - name: Producer + cross-repo verify
