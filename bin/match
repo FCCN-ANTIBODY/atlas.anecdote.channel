@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# The matchmaker. For each need Atlas carries (_data/needs.yml), find candidate piles it
+# indexes (_data/piles.yml, in the same scope), and test constitutional fit. The fit check
+# is the EJECTED seam (mirrors data-pile's bin/judge): set ATLAS_MATCH_CMD to an agent or a
+# human that reads the candidate's CONSTITUTION/questions and judges; the default is honest
+# (`needs-judgment`), so nothing auto-matches without a real judge. Emits matches.json
+# (accepted matches only), which Atlas publishes at /matches.json; the asker PULLS it. Atlas
+# never writes into an asker — routing a match home is the asker's own pull + re-issue.
+#
+#   bin/match
+# Env: ATLAS_MATCH_CMD  command reading {need,candidate} JSON on stdin -> {verdict,reason}
+set -euo pipefail
+here="$(cd "$(dirname "$0")" && pwd)"
+repo="$(cd "$here/.." && pwd)"
+y2j() { ruby -ryaml -rjson -e 'puts JSON.generate(YAML.load_file(ARGV[0]) || [])' "$1"; }
+
+needs="$(y2j "$repo/_data/needs.yml")"
+piles="$(y2j "$repo/_data/piles.yml")"
+tells="$(y2j "$repo/_data/tells.yml")"
+atlas_url="$(ruby -ryaml -e 'c=YAML.load_file(ARGV[0]) rescue {}; puts((c||{})["url"].to_s)' "$repo/_config.yml" 2>/dev/null || true)"
+atlas_url="${atlas_url:-https://atlas.anecdote.channel}"
+match_cmd="${ATLAS_MATCH_CMD:-}"
+
+matches="[]"
+nn="$(jq 'length' <<<"$needs")"; i=0
+while [ "$i" -lt "$nn" ]; do
+  need="$(jq -c ".[$i]" <<<"$needs")"; i=$((i+1))
+  nscope="$(jq -r '.scope // ""' <<<"$need")"
+  # Prefilter: candidate piles Atlas indexes in the same scope.
+  cands="$(jq -c --arg s "$nscope" '[.[]|select(.scope==$s)]' <<<"$piles")"
+  turl="$(jq -r --arg s "$nscope" 'map(select(.scope==$s))|.[0].url // ""' <<<"$tells")"
+  cn="$(jq 'length' <<<"$cands")"; j=0
+  while [ "$j" -lt "$cn" ]; do
+    pid="$(jq -r ".[$j].id" <<<"$cands")"; j=$((j+1))
+    cand="$(jq -nc --arg a "$atlas_url" --arg t "$turl" --arg p "$pid" '{atlas_url:$a,tell_url:$t,pile_id:$p}')"
+    if [ -n "$match_cmd" ]; then
+      v="$(jq -nc --argjson need "$need" --argjson candidate "$cand" '{need:$need,candidate:$candidate}' | "$match_cmd")"
+      verdict="$(jq -r '.verdict // "needs-judgment"' <<<"$v")"
+      reason="$(jq -r '.reason // ""' <<<"$v")"
+    else
+      verdict="needs-judgment"; reason="constitutional fit needs an agent/human (set ATLAS_MATCH_CMD)"
+    fi
+    [ "$verdict" = accept ] || continue
+    creq="$(jq -r 'if (.terms // "")=="" then true else false end' <<<"$need")"
+    matches="$(jq -c --argjson need "$need" --argjson cand "$cand" --arg v "$verdict" --arg r "$reason" --argjson creq "$creq" \
+      '. + [{need_id:$need.id, asker_repo:$need.asker_repo, candidate:$cand, verdict:$v, reason:$r, consent_required:$creq}]' <<<"$matches")"
+  done
+done
+
+jq . <<<"$matches" > "$repo/matches.json"
+echo "match: wrote matches.json ($(jq length <<<"$matches") accepted match(es))" >&2

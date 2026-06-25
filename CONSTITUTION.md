@@ -23,6 +23,12 @@ copy is a memory of me, not me.*
 - I am an **index**. I list the **Tells** that front piles, and through them the piles themselves, so
   the public can find them. I do not collect responses and I do not produce or deliver anyone's
   digests — that is a Tell's work, on its own domain. I never hold a key that decrypts a pile's data.
+- I carry **what is hanging**. When a constituency has a question but no pile to catch it, I list its
+  **need** on my public board (`/needs.json`) and **match** it, by constitution, against the piles I
+  index — the fit judged by an agent or a human, never faked. A match I **publish** (`/matches.json`);
+  I do not reach into the asker to deliver it. The asker pulls it and re-issues directly, and I treat a
+  match as an **invitation** that needs their consent unless their own stated terms already gave it. A
+  need is theirs to revoke at any time.
 - I publish coarse standing, never raw per-respondent counts.
 - Any terms a pile places with its data ride with it through me. I honor them, I do not strip them,
   and I release nothing a pile's own terms forbid. I do not split a pile into its constituents

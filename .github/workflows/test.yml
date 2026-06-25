@@ -1,0 +1,25 @@
+name: test
+
+# Smoke-test the matchmaker (bin/match). The site templates are covered by the build
+# job; this guards the request-for-pile logic.
+
+on:
+  push:
+    paths:
+      - "bin/match"
+      - "_data/needs.yml"
+      - "test/**"
+      - ".github/workflows/test.yml"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Matchmaker smoke test
+        run: test/run.sh   # ruby (stdlib) + jq are preinstalled on the runner
