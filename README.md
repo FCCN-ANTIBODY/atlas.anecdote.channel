@@ -8,6 +8,12 @@ It is one connector in a constellation of `*.anecdote.channel` repos: "Civic Nod
 By convention the repo name is the DNS name served via GitHub Pages custom domain
 (`atlas.anecdote.channel`); Cloudflare will later front it for caching-header control.
 
+Atlas is **only an index + reflecting gateway**. Collecting responses and delivering a pile its
+full-fidelity encrypted digests is a **Tell's** job, not Atlas's — Atlas lists the Tells that front
+piles (see [`_data/tells.yml`](_data/tells.yml) and
+[`tell.anecdote.channel`](https://github.com/FCCN-ANTIBODY/tell.anecdote.channel)) and reflects the
+coarse public maps those piles place here. A pile is reached *through* its Tell.
+
 ## Atlas's constitution
 
 Atlas governs itself by a single document, [`CONSTITUTION.md`](CONSTITUTION.md), served live at

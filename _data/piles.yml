@@ -1,41 +1,30 @@
-# Registry of data-piles Atlas reflects — and the trust anchor for custody.
+# Registry of data-piles Atlas reflects — and the trust anchor for the public map.
 #
 # At build time this becomes piles.json (the manifest the runtime client + the
 # gateway Worker read). No data is fetched at build time, so updating a pile's
 # data never rebuilds the site.
 #
-# Atlas is a GATEWAY: it only ever serves pile data from its OWN domain, never by
-# reaching into a pile's repo. Each pile owns a self-named, prefixed BRANCH in
-# this repo (a non-merging parallel namespace) and places its artifact by pushing
-# SIGNED commits to that branch only — see CONTRACT.md "Serving substrate". This
-# registry is the anchor: it declares which branch + signer is legitimate for each
-# slice, while the served `map` path stays stable for the browser and aggregators.
+# Atlas is an INDEX + reflecting GATEWAY: it only ever serves a pile's coarse public
+# map from its OWN domain, never by reaching into a pile's repo. Each pile owns a
+# self-named, prefixed BRANCH in this repo (a non-merging parallel namespace) and
+# places its map by pushing SIGNED commits to that branch only — see CONTRACT.md.
+# This registry declares which branch + signer is legitimate for each slice.
 #
-# This registry anchors BOTH directions of the channel:
-#   • OUTBOUND (pile → Atlas): the pile pushes signed commits to its `branch`
-#     (pile/<scope>/<id>); `signer` is the PILE's own key — see CONTRACT.md
-#     "Gateway placement".
-#   • INBOUND (Atlas → pile): Atlas produces encrypted digests and publishes them
-#     on its OWN `feed` branch (feed/<scope>/<id>), served at /piles/<id>/feed/*;
-#     the pile PULLS them. Atlas signs those with its single delivery key
-#     (keys/atlas.*), which the pile pins in ITS pile.yml — not recorded per-entry
-#     here. See CONTRACT.md "Inbound digest channel". No GitHub App is involved.
+# Inbound (responses → encrypted digests → pile) is NOT Atlas's job — it belongs to
+# the pile's Tell (see _data/tells.yml and tell.anecdote.channel). A pile is reached
+# through its Tell; Atlas only lists and reflects.
 #
 # Each entry needs:
 #   id:     stable slug, also the served path segment
 #   name:   human-readable label
 #   level:  region tier (district | city | county | … ) — carried for aggregators
-#   scope:  region/namespace tier; the <scope> segment of the branch refs
+#   scope:  region/namespace tier; the <scope> segment of the branch ref
 #   map:    the stable Atlas-hosted path the gateway serves this slice at. A
 #           committed seed lives here so the slice renders before first placement.
-#   branch: the pile's own OUTBOUND ref the gateway reads live map data from
+#   branch: the pile's own ref the gateway reads live map data from
 #           (convention pile/<scope>/<id>); the pile pushes signed commits here.
-#   signer: the key fingerprint Atlas expects to have signed this OUTBOUND branch's
-#           commits — the documented/audit anchor for outbound custody.
-#   feed:   Atlas's OWN inbound ref for this pile (convention feed/<scope>/<id>),
-#           served at /piles/<id>/feed/*; the pile pulls + verifies it.
-#   age_recipient: the pile's age recipient (age1…), supplied by the handshake PR.
-#           Atlas wraps each digest's ratchet seed to this so only the owner reads it.
+#   signer: the key fingerprint Atlas expects to have signed this branch's commits —
+#           the documented/audit anchor for map custody.
 - id: cd04-q1
   name: "Colorado House District 4 — Question 1"
   level: district
@@ -43,5 +32,3 @@
   map: "/piles/cd04-q1/map.xml"
   branch: "pile/colorado/cd04-q1"
   signer: "SHA256:PLACEHOLDER-cd04-q1-ssh-key-fingerprint"
-  feed: "feed/colorado/cd04-q1"
-  age_recipient: "age1PLACEHOLDER000000000000000000000000000000000000000000000000"

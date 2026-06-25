@@ -62,26 +62,11 @@ export default {
 
     const entry = (await loadManifest(url.origin)).find((p) => p.id === id);
 
-    // Two read surfaces per pile, both from Atlas's own repo:
-    //   /piles/<id>/<file>        -> OUTBOUND map on entry.branch (pile/<scope>/<id>)
-    //   /piles/<id>/feed/<file>   -> INBOUND encrypted digest on entry.feed
-    //                                (feed/<scope>/<id>), under that branch's inbox/.
-    // The inbound payload is encrypted, so serving it openly (CORS-*, cached) is safe;
-    // a pile pulls + verifies it. There is no committed seed for feed/*, so a miss 404s.
-    let raw = null;
-    if (entry && file) {
-      if (file.startsWith("feed/") && entry.feed) {
-        raw =
-          `https://raw.githubusercontent.com/${OWNER}/${REPO}/` +
-          `${entry.feed}/inbox/${file.slice("feed/".length)}`;
-      } else if (entry.branch) {
-        raw =
-          `https://raw.githubusercontent.com/${OWNER}/${REPO}/` +
-          `${entry.branch}/${file}`;
-      }
-    }
     let placed = null;
-    if (raw) {
+    if (entry && entry.branch && file) {
+      const raw =
+        `https://raw.githubusercontent.com/${OWNER}/${REPO}/` +
+        `${entry.branch}/${file}`;
       placed = await fetch(raw, { cf: { cacheTtl: CACHE_TTL, cacheEverything: true } });
     }
 

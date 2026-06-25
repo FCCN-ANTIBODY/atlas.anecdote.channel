@@ -45,10 +45,8 @@ jobs:
           stamp="$(date -u +%Y%m%dT%H%M%SZ)"
           cutoff="$(date -u -d "-${KEEP_DAYS} days" +%s)"
 
-          # Each pile/** (outbound map) and feed/** (inbound digest) branch is an
-          # independent, non-merging append-only signed namespace — bound both.
-          for ref in $(git for-each-ref --format='%(refname:short)' \
-                         'refs/remotes/origin/pile/*' 'refs/remotes/origin/feed/*'); do
+          # Each pile/** branch is an independent, non-merging namespace.
+          for ref in $(git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/pile/*'); do
             branch="${ref#origin/}"
             root_epoch="$(git log -1 --format=%ct "$ref")"
             # Only touch branches whose newest commit predates the cutoff window;
