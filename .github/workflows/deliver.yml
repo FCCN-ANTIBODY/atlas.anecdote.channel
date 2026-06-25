@@ -1,0 +1,119 @@
+name: deliver
+
+# Produce inbound encrypted digests and publish them on Atlas's OWN feed branches
+# (feed/<scope>/<id>), parallel to the outbound pile/<scope>/<id> namespace. A pile
+# PULLS its feed from the gateway (see CONTRACT.md "Inbound digest channel"); Atlas
+# never writes into a pile, so this needs NO GitHub App and NO cross-repo token —
+# only contents:write on THIS repo, which the built-in GITHUB_TOKEN already grants.
+#
+# Secrets required:
+#   ATLAS_SIGNER_KEY     ssh private signing key; public half is committed at
+#                        keys/atlas.pub and registered by each pile (see keys/README.md)
+#   ATLAS_SEED_IDENTITY  age identity; lets deliver resume each pile's one-way ratchet
+#                        across runs without per-pile secrets (see bin/deliver)
+#
+# The plaintext block content is the ONE deliberately stubbed seam: the real rollup
+# digest source plugs in where marked below. Everything around it (encrypt, chain,
+# sign, publish) is production code exercised by test/run.sh.
+
+on:
+  workflow_dispatch:
+    inputs:
+      only_id:
+        description: "Deliver to just this pile id (blank = every registered pile)"
+        required: false
+  schedule:
+    - cron: "47 * * * *" # hourly, best-effort, batched — neither side burns the other's CI
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deliver
+  cancel-in-progress: false
+
+jobs:
+  deliver:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install age
+        run: sudo apt-get update && sudo apt-get install -y age
+
+      - name: Produce and publish digests
+        env:
+          ATLAS_SIGNER_KEY: ${{ secrets.ATLAS_SIGNER_KEY }}
+          ATLAS_SEED_IDENTITY: ${{ secrets.ATLAS_SEED_IDENTITY }}
+          ONLY_ID: ${{ inputs.only_id }}
+        run: |
+          set -euo pipefail
+          [ -n "${ATLAS_SEED_IDENTITY:-}" ] || { echo "::error::ATLAS_SEED_IDENTITY secret required"; exit 1; }
+          umask 077
+          signkey=""
+          if [ -n "${ATLAS_SIGNER_KEY:-}" ]; then
+            signkey="$(mktemp)"; printf '%s\n' "$ATLAS_SIGNER_KEY" > "$signkey"
+          else
+            echo "::warning::no ATLAS_SIGNER_KEY — manifests will be unsigned"
+          fi
+          git config user.name  "atlas-deliver"
+          git config user.email "atlas-deliver@users.noreply.github.com"
+
+          # Parse the simple registry shape (id / scope / age_recipient / feed) without a YAML dep.
+          python3 - "$ONLY_ID" <<'PY' > /tmp/targets.tsv
+          import sys, re
+          only = sys.argv[1].strip()
+          cur = {}
+          out = []
+          def flush():
+              if cur.get("id") and cur.get("age_recipient") and cur.get("feed"):
+                  out.append((cur["id"], cur.get("scope",""), cur["age_recipient"], cur["feed"]))
+          for line in open("_data/piles.yml"):
+              m = re.match(r'\s*-\s*id:\s*"?([^"\n]+)"?', line)
+              if m:
+                  flush(); cur = {"id": m.group(1).strip()}
+                  continue
+              for k in ("scope","age_recipient","feed"):
+                  mm = re.match(r'\s*%s:\s*"?([^"\n]+)"?' % k, line)
+                  if mm: cur[k] = mm.group(1).strip()
+          flush()
+          for id_,scope,recip,feed in out:
+              if only and id_ != only: continue
+              print("\t".join([id_,scope,recip,feed]))
+          PY
+
+          [ -s /tmp/targets.tsv ] || { echo "no deliverable piles (need id + age_recipient + feed)"; exit 0; }
+
+          while IFS=$'\t' read -r id scope recip feed; do
+            echo "::group::deliver $id -> $feed"
+            work="$(mktemp -d)"; mkdir -p "$work/inbox"
+            parent=""
+            if git rev-parse -q --verify "origin/$feed" >/dev/null; then
+              git fetch --quiet origin "$feed"
+              git archive "origin/$feed" inbox 2>/dev/null | tar -x -C "$work" 2>/dev/null || true
+              parent="-p origin/$feed"
+            fi
+
+            # ─── STUB SEAM: replace this with the real rollup digest for $id ───
+            block="$(mktemp)"
+            printf 'STUB digest for %s — produced %s\nReplace this block source with the real rollup.\n' \
+              "$id" "$(date -u +%FT%TZ)" > "$block"
+            # ───────────────────────────────────────────────────────────────────
+
+            args=(--dir "$work" --recipient "$recip" --source atlas --block "$block")
+            [ -n "$signkey" ] && args+=(--signkey "$signkey")
+            bin/deliver "${args[@]}"
+
+            # Commit ONLY inbox/ to the feed branch via a temp index (never touch main's tree).
+            idx="$(mktemp)"; export GIT_INDEX_FILE="$idx"
+            git read-tree --empty
+            git --work-tree="$work" add -A inbox
+            tree="$(git write-tree)"
+            head_seq="$(jq -r '.head.seq' "$work/inbox/manifest.json")"
+            commit="$(git commit-tree "$tree" $parent -m "deliver: $id seq $head_seq $(date -u +%FT%TZ)")"
+            git push origin "$commit:refs/heads/$feed"
+            unset GIT_INDEX_FILE
+            echo "pushed $feed @ seq $head_seq"
+            echo "::endgroup::"
+          done < /tmp/targets.tsv
