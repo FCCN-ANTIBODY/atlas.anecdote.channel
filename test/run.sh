@@ -75,4 +75,13 @@ else
   echo "[4-6] SKIPPED — no data-pile checkout at \$DP_REPO ($DP_REPO)"
 fi
 
+echo "[7] rollup hook emits sealable output, and deliver seals it"
+rb="$work/rollup.block"
+bin/rollup cd04-q1 colorado > "$rb"
+[ -s "$rb" ] || fail "bin/rollup produced no output"
+jq -e . "$rb" >/dev/null || fail "bin/rollup output is not valid JSON"
+bin/deliver --dir "$work/rfeed" --recipient "$recip" --signkey "$work/sign" --block "$rb" >/dev/null \
+  || fail "deliver could not seal rollup output"
+ok "rollup output sealed into a delivery block"
+
 echo "ALL TESTS PASSED"
