@@ -187,6 +187,11 @@ write credential** that would make the operator the global writer/signer for eve
 Each delivery on `feed/<scope>/<id>` MUST: `age`-encrypt every block to the pile's registered
 `age_recipient`; hash every block into the signed `manifest.json` chain with a `ratchet_pub`
 commitment; sign the manifest head with the key whose fingerprint the pile pinned; and stay reachable
-at `/piles/<id>/feed/*`. The pile's `bin/verify` rejects anything else and fails closed. How Atlas
-stages the plaintext digests internally (batching, the rollup source) is Atlas's own concern — the
-one deliberately stubbed seam in `bin/deliver` / `deliver.yml`.
+at `/piles/<id>/feed/*`. The pile's `bin/verify` rejects anything else and fails closed.
+
+What each block *contains* is Atlas's own concern, isolated to one pluggable seam: `deliver.yml`
+runs a **rollup hook** — `bin/rollup <id> [scope]` by default, or whatever `ATLAS_ROLLUP_CMD` points
+at — once per window and seals its stdout as that window's block. `bin/rollup` ships as a reference
+that emits a small provenance-stamped JSON record; an operator replaces it (or overrides the env) with
+the real source. Empty output means "nothing new this window" and the pile is skipped (no empty
+block). Everything downstream of the hook — encrypt, chain, sign, publish — is fixed production code.
