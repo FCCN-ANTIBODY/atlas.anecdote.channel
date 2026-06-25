@@ -15,7 +15,8 @@ permalink: /piles.json
     "level": {{ pile.level | jsonify }},
     "map": {{ pile.map | jsonify }},
     "branch": {{ pile.branch | jsonify }},
-    "signer": {{ pile.signer | jsonify }}
+    "signer": {{ pile.signer | jsonify }},
+    "feed": {{ pile.feed | jsonify }}
   }{%- unless forloop.last -%},{%- endunless -%}
 {%- endfor -%}
 ]
