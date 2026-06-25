@@ -1,0 +1,36 @@
+name: match
+
+# Run the matchmaker over the needs Atlas carries and publish matches.json. For each
+# need (_data/needs.yml), test candidate piles in the same scope for constitutional fit
+# (bin/match — pluggable via ATLAS_MATCH_CMD; honest needs-judgment by default). The
+# accepted matches are committed to matches.json on main; the asker PULLS it. No write
+# into any asker — routing a match home is the asker's own pull + re-issue, with consent.
+
+on:
+  schedule:
+    - cron: "41 * * * *" # hourly, best-effort
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: match
+  cancel-in-progress: false
+
+jobs:
+  match:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run the matchmaker
+        run: bin/match    # ruby (stdlib yaml/json) + jq are present on the runner
+      - name: Publish matches.json if it changed
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- matches.json; then echo "no match changes"; exit 0; fi
+          git config user.name  "atlas-match"
+          git config user.email "atlas-match@users.noreply.github.com"
+          git add matches.json
+          git commit -m "match: refresh published matches"
+          git push
