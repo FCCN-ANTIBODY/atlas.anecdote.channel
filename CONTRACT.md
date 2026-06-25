@@ -5,6 +5,11 @@ other connectors (the consumers). Atlas implements the consumer side; the produc
 specified here for the pile/sink repos (e.g. the `tiliv/public-notes` pattern and the
 civic-node repos).
 
+> This document covers the **outbound, coarse, public** map a pile *places onto* Atlas. The
+> **inbound, full-fidelity, encrypted** channel — where Atlas *delivers digests into* a pile's
+> `feed/**` branches — is the mirror of this contract and is specified in the data-pile template:
+> [`data-pile/CONTRACT.md`](https://github.com/FCCN-ANTIBODY/data-pile/blob/main/CONTRACT.md).
+
 ## The published map (`map.xml` + `map.xsl`)
 
 Each pile publishes one small XML document per poll, with a linked XSL stylesheet so the raw
