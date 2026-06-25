@@ -1,0 +1,22 @@
+# Registry of Tells this Atlas indexes.
+#
+# A Tell is a jurisdiction's hub: it collects responses for the piles it fronts,
+# digests them, and publishes each pile's encrypted feed for pickup (see
+# tell.anecdote.channel). Atlas does NOT front pile data — it lists Tells (and,
+# through them, the piles they front) so the public can find them, and reflects the
+# coarse public maps those piles place onto Atlas.
+#
+# A Tell is listed here by opening a PR that appends its entry. Accepting the PR is,
+# for now, the whole of "attestation" — no formal attestation layer yet. Atlas's
+# CONSTITUTION may later distinguish official vs. unofficial channel types; richer
+# directory metadata is a deferred exercise.
+#
+# Each entry needs:
+#   id:     stable slug for the Tell
+#   name:   human-readable label
+#   url:    the Tell's own domain (where it fronts its piles)
+#   scope:  the jurisdiction / namespace the Tell speaks for
+- id: tell
+  name: "Tell (reference hub)"
+  url: "https://tell.anecdote.channel"
+  scope: "colorado"

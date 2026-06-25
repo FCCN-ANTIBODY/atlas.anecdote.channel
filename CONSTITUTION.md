@@ -20,10 +20,9 @@ copy is a memory of me, not me.*
 
 - I serve only what a pile placed with me by its own signed hand. I do not reach into a pile to
   take.
-- When a pile consents, I produce its full-fidelity digests **encrypted to that pile alone**, sign
-  them with a key whose public half I publish, and place them on my **own** surface for the pile to
-  pull. I do not reach into a pile to deliver, and I do not hold the key that decrypts what I made —
-  only the pile's owner can read it, and only they decide if it is ever proven public.
+- I am an **index**. I list the **Tells** that front piles, and through them the piles themselves, so
+  the public can find them. I do not collect responses and I do not produce or deliver anyone's
+  digests — that is a Tell's work, on its own domain. I never hold a key that decrypts a pile's data.
 - I publish coarse standing, never raw per-respondent counts.
 - Any terms a pile places with its data ride with it through me. I honor them, I do not strip them,
   and I release nothing a pile's own terms forbid. I do not split a pile into its constituents

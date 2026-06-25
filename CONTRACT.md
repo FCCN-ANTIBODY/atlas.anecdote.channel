@@ -5,10 +5,11 @@ other connectors (the consumers). Atlas implements the consumer side; the produc
 specified here for the pile/sink repos (e.g. the `tiliv/public-notes` pattern and the
 civic-node repos).
 
-> This section covers the **outbound, coarse, public** map a pile *places onto* Atlas. Atlas also
-> runs an **inbound, full-fidelity, encrypted** channel — where Atlas *publishes* per-pile digests
-> that a pile *pulls* — described in [Inbound digest channel](#the-inbound-digest-channel-atlas--pile)
-> below and mirrored, from the pile's side, in the data-pile template:
+> This document covers the **outbound, coarse, public** map a pile *places onto* Atlas — Atlas's
+> whole role. The **inbound, full-fidelity, encrypted** channel (collecting responses and delivering
+> a pile its digests) belongs to the pile's **Tell**, not Atlas; see
+> [`tell.anecdote.channel/CONTRACT.md`](https://github.com/FCCN-ANTIBODY/tell.anecdote.channel/blob/main/CONTRACT.md)
+> and the pile's side in
 > [`data-pile/CONTRACT.md`](https://github.com/FCCN-ANTIBODY/data-pile/blob/main/CONTRACT.md).
 
 ## The published map (`map.xml` + `map.xsl`)
@@ -139,59 +140,10 @@ Atlas reflects any map matching this schema **at runtime** via `assets/atlas.js`
 fetches no data — it only emits the shell + manifest. Adding or removing a pile rebuilds the
 shell once; ongoing data updates need no rebuild.
 
-## The inbound digest channel (Atlas → pile)
+## Inbound digests are a Tell's job, not Atlas's
 
-The map above is the *outbound, coarse, public* surface a pile places onto Atlas. The **inbound**
-channel is its mirror: the *full-fidelity, encrypted* digests Atlas produces for a pile. The pile's
-side — crypto model (forward hash ratchet, `age`-wrapped seed, signed hash-linked manifest), owner
-decrypt, and provable disclosure — is specified in
-[`data-pile/CONTRACT.md`](https://github.com/FCCN-ANTIBODY/data-pile/blob/main/CONTRACT.md). This
-section pins **Atlas's half**.
-
-### Same gateway rule, mirrored — Atlas publishes, the pile pulls
-
-The outbound rule is "Atlas never reaches into a pile; the pile places onto Atlas." Inbound is the
-exact inversion of *who reaches*: **Atlas never reaches into a pile here either** — it publishes each
-pile's encrypted digests on its **own** surface and the pile pulls them. This is what keeps the
-architecture replicable and app-free: there is **no GitHub App, no cross-repo token, no central
-write credential** that would make the operator the global writer/signer for every pile.
-
-- **Store.** Atlas writes each pile's chain to a `feed/<scope>/<id>` branch in **this** repo —
-  parallel to the outbound `pile/<scope>/<id>` namespace, and like it a non-merging append-only
-  signed log that the deploy build ignores. Atlas writes it with the built-in `GITHUB_TOKEN`; nothing
-  cross-repo is involved. `bin/deliver` produces the chain; `deliver.yml` commits it (via a temp
-  index + `commit-tree`, so `main` is never touched), and `prune-pile-history.yml` bounds it.
-- **Serve.** The `piles-gateway` Worker serves `/piles/<id>/feed/<file>` from that branch's `inbox/`,
-  CORS-open and cached, exactly as it serves `/piles/<id>/map.xml` for the outbound map. The payload
-  is encrypted, so open serving leaks nothing.
-- **Pull.** The pile's `ingest` workflow fetches `/piles/<id>/feed/*`, verifies the signed manifest
-  against the Atlas signer it pinned, and persists the blocks into its own repo. No credential —
-  the encryption and the signature, not the transport, are what make it safe.
-
-### Two Atlas keys, both ordinary primitives (no app)
-
-- **`ATLAS_SIGNER_KEY`** — an SSH signing key. Atlas signs every manifest head with
-  `ssh-keygen -Y sign -n data-pile`, the *same primitive* the outbound side already uses for
-  `pile/**` commits. The **public** half is committed under `keys/` (`atlas.pub` / `atlas.signers` /
-  `atlas.fpr`, produced by `bin/publish-signer`); a pile pins it **by hand**, confirmed
-  out-of-band / IRL — the entire trust handoff. The signed manifest is the integrity anchor: it
-  travels with the data, so the untrusted public-fetch transport cannot weaken it.
-- **`ATLAS_SEED_IDENTITY`** — a single `age` identity (secret; no committed half). It lets Atlas
-  resume each pile's one-way ratchet across deliveries without per-pile secrets: at genesis Atlas
-  draws `K_0` and writes both `inbox/seed.age` (wrapped to the pile, for the owner) and
-  `inbox/seed.atlas.age` (wrapped to Atlas); later runs unwrap Atlas's copy, replay to the head, and
-  append. Losing it only prevents *extending* a chain — it never touches the owner's decrypt path.
-
-### What Atlas guarantees a pile (the producer obligations)
-
-Each delivery on `feed/<scope>/<id>` MUST: `age`-encrypt every block to the pile's registered
-`age_recipient`; hash every block into the signed `manifest.json` chain with a `ratchet_pub`
-commitment; sign the manifest head with the key whose fingerprint the pile pinned; and stay reachable
-at `/piles/<id>/feed/*`. The pile's `bin/verify` rejects anything else and fails closed.
-
-What each block *contains* is Atlas's own concern, isolated to one pluggable seam: `deliver.yml`
-runs a **rollup hook** — `bin/rollup <id> [scope]` by default, or whatever `ATLAS_ROLLUP_CMD` points
-at — once per window and seals its stdout as that window's block. `bin/rollup` ships as a reference
-that emits a small provenance-stamped JSON record; an operator replaces it (or overrides the env) with
-the real source. Empty output means "nothing new this window" and the pile is skipped (no empty
-block). Everything downstream of the hook — encrypt, chain, sign, publish — is fixed production code.
+The *outbound* map above is Atlas's whole role. The **inbound** channel — collecting responses and
+delivering a pile its full-fidelity, encrypted digests — belongs to the pile's **Tell**
+([`tell.anecdote.channel`](https://github.com/FCCN-ANTIBODY/tell.anecdote.channel)), not to Atlas.
+Atlas only **indexes** Tells (see [`_data/tells.yml`](_data/tells.yml)) and reflects the coarse maps
+their piles place here. A pile is reached *through* its Tell.
