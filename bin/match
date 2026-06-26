@@ -12,12 +12,20 @@
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 repo="$(cd "$here/.." && pwd)"
+# Inputs/outputs default to this repo's own registry, so running bin/match bare is
+# unchanged. The ATLAS_* overrides let a host workspace point the same matchmaker at
+# its OWN needs/piles/tells (see .github/actions/match) — the library aspect.
+needs_file="${ATLAS_NEEDS:-$repo/_data/needs.yml}"
+piles_file="${ATLAS_PILES:-$repo/_data/piles.yml}"
+tells_file="${ATLAS_TELLS:-$repo/_data/tells.yml}"
+config_file="${ATLAS_CONFIG:-$repo/_config.yml}"
+out_file="${ATLAS_OUT:-$repo/matches.json}"
 y2j() { ruby -ryaml -rjson -e 'puts JSON.generate(YAML.load_file(ARGV[0]) || [])' "$1"; }
 
-needs="$(y2j "$repo/_data/needs.yml")"
-piles="$(y2j "$repo/_data/piles.yml")"
-tells="$(y2j "$repo/_data/tells.yml")"
-atlas_url="$(ruby -ryaml -e 'c=YAML.load_file(ARGV[0]) rescue {}; puts((c||{})["url"].to_s)' "$repo/_config.yml" 2>/dev/null || true)"
+needs="$(y2j "$needs_file")"
+piles="$(y2j "$piles_file")"
+tells="$(y2j "$tells_file")"
+atlas_url="$(ruby -ryaml -e 'c=YAML.load_file(ARGV[0]) rescue {}; puts((c||{})["url"].to_s)' "$config_file" 2>/dev/null || true)"
 atlas_url="${atlas_url:-https://atlas.anecdote.channel}"
 match_cmd="${ATLAS_MATCH_CMD:-}"
 
@@ -47,5 +55,5 @@ while [ "$i" -lt "$nn" ]; do
   done
 done
 
-jq . <<<"$matches" > "$repo/matches.json"
+jq . <<<"$matches" > "$out_file"
 echo "match: wrote matches.json ($(jq length <<<"$matches") accepted match(es))" >&2
