@@ -58,3 +58,51 @@ signature matches the `signer` fingerprint the entry claims.
   `tell/<scope>/<id>` for that entry, and (c) verifies the head commit is signed by the key whose
   fingerprint equals `signer`. Deferred with the Phase-B tooling; needs the Tell-side `bin/register`
   landed first to produce PRs in the exact shape the check would enforce.
+- **Scope:** this validates *ownership* (who registered), not *fitness* (whether the registrant's
+  constitution coheres with what this Atlas attests). Fitness is the **judge**, #5 — a distinct intake.
+
+## 5. The summonable judge — the consent junction that gates registration
+
+A signed registration proves **ownership** (#4: *who* is registering) but never **fitness** (*what* the
+registrant's constitution commits to, and whether it coheres with what this Atlas attests). An ownership
+signature vouches for identity; it cannot vouch for content. That gap is invisible while `register` is
+narrow — it can only append a Tell's own self-description — but a **registry-agnostic `register`**
+([tell `OPEN-QUESTIONS.md` #3](https://github.com/FCCN-ANTIBODY/tell.anecdote.channel/blob/main/OPEN-QUESTIONS.md))
+would let a node make this Atlas commit arbitrary buckets backed by arbitrary logic on the strength of an
+ownership signature alone. The widening is only safe **when a judgement is rendered**; unattended, it
+steals base on consent.
+
+So a registration has **three consent intakes**, and an operator is choosing among them *per action*:
+
+- **PR** — a human attests by merging. Registration already leans on this: the human in the merge loop
+  *is* a judgement, by design.
+- **judge** — an agent reads the registrant's live constitution and renders a fitness verdict. The
+  pattern already exists as `bin/match`'s `ATLAS_MATCH_CMD` seam — the first summonable judge, today only
+  in the matchmaker, not the registration path.
+- **unattended** — a parent auto-signs all collection buckets with no per-item judgement. Cheapest to
+  operate, and the **largest runtime judgement burden to make safe**; gateable by a cron batcher, but
+  with practical cost limits per operator.
+
+**The judge is a junction, not a hard gate.** It has an *available* state and a *not-available* state
+(too busy, rate-limited, budget/quota spent, a manual switch, or the judge's own uncertainty). The
+not-available state is exactly where a human steps in — which is the PR's human-merge intake. So the
+registration judge is naturally **a PR hook that can stop _async_, awaiting a human**, for any reason it
+can't decide: judge-when-it-can, human-when-it-can't — the two intakes unified rather than competing. The
+same judge, used in `composite`, is also reusable for any constitution-comparison work it performs
+elsewhere.
+
+- **Blocks:** safely generalizing `register` (the widening needs this gate); a listing that isn't purely
+  "a human merged it"; reusing one judge idiom everywhere constitutions are compared.
+- **Constraint (load-bearing):** binding a registration *parent* to a **scaling** judgement workload is
+  risky even batched — a large judgement backlog grinds the parent to a halt, and *to users that is
+  indistinguishable from being down entirely*. So our actions must keep operating on **fixed buckets with
+  narrow workload assurances**: an operator may run the judge always on some workloads and route others to
+  human mode, but no action should hand the judge an unbounded queue.
+- **Open (the judge action's I/O + authorization):**
+  - how a judge action *receives* {the registrant's live constitution, the registry/parent context} and
+    *emits* a verdict that gates a merge — including the async "awaiting a human" verdict — and how that
+    verdict is recorded (a committed verdict, a transparency report, a PR label?);
+  - if an Atlas calls a shared `FCCN-ANTIBODY/judge` action, how the calling node **identifies itself**
+    and **proves the request is authorized**. The Atlas-side handle for "this is a legitimate judgement
+    request" is its `needs/` board — but that is Atlas-specific, not a Tell notion, so it does not
+    generalize down a tier. The authorization model for a shared judge is unsettled.
