@@ -1,18 +1,19 @@
 # atlas.anecdote.channel
 
-**Atlas** is a *reflection API* — a static data browser that reflects moderated snapshots
-("maps") published by [anecdote.channel](https://anecdote.channel) **data-piles**.
+**Atlas** is a **directory of Tells** — and a reflecting gateway for the coarse maps the piles behind
+them place here. A [**Tell**](https://github.com/FCCN-ANTIBODY/tell.anecdote.channel) is a
+jurisdiction's hub that fronts data-piles; Atlas lists the Tells (see [`_data/tells.yml`](_data/tells.yml),
+surfaced at [`/tells`](https://atlas.anecdote.channel/tells/) and `/tells.json`) so the public can find
+them, and through a listed Tell, the piles that **group up behind it**.
 
 It is one connector in a constellation of `*.anecdote.channel` repos: "Civic Node" repos
-(e.g. `fortcollins`, `loveland`) are data-piles; connectors (`atlas`, `antibody`) consume them.
-By convention the repo name is the DNS name served via GitHub Pages custom domain
-(`atlas.anecdote.channel`); Cloudflare will later front it for caching-header control.
+(e.g. `fortcollins`, `loveland`) are data-piles, each fronted by a Tell; connectors (`atlas`,
+`antibody`) consume them. By convention the repo name is the DNS name served via GitHub Pages custom
+domain (`atlas.anecdote.channel`); Cloudflare will later front it for caching-header control.
 
-Atlas is **only an index + reflecting gateway**. Collecting responses and delivering a pile its
-full-fidelity encrypted digests is a **Tell's** job, not Atlas's — Atlas lists the Tells that front
-piles (see [`_data/tells.yml`](_data/tells.yml) and
-[`tell.anecdote.channel`](https://github.com/FCCN-ANTIBODY/tell.anecdote.channel)) and reflects the
-coarse public maps those piles place here. A pile is reached *through* its Tell.
+Atlas **does not register data-piles directly**, and it never fronts pile data. Collecting responses
+and delivering a pile its full-fidelity encrypted digests is a **Tell's** job — Atlas lists Tells and
+reflects the coarse public maps the piles behind them place here. A pile is reached *through* its Tell.
 
 ## Atlas's constitution
 
@@ -62,21 +63,48 @@ manifest; the reflecting happens in the browser at runtime.
 
 | Path | Purpose |
 | --- | --- |
-| `_data/piles.yml` | Registry of piles to reflect (`id`, `name`, `level`, Atlas-hosted `map:` path) |
-| `piles.json` | Build-time manifest rendered from the registry; read by the client |
+| `_data/tells.yml` | **Registry of Tells this Atlas lists** (`id`, `name`, `url`, `scope`, `signer`, `reports`) |
+| `tells.json` | Build-time manifest of listed Tells; the public directory in machine form |
+| `tells.md` | The `/tells` directory page rendered from the registry |
+| `_data/piles.yml` | Registry of piles that group behind a listed Tell (`id`, `name`, `level`, `tell:`, `map:` path) |
+| `piles.json` | Build-time manifest rendered from the pile registry; read by the client + gateway |
 | `assets/atlas.js` | Runtime client: fetch each Atlas-hosted map → parse XML → render slice + freshness |
 | `piles/<id>/` | Committed seed map (`map.xml` + `map.xsl`) served until the gateway places live data |
 | `_layouts/`, `index.md`, `assets/atlas.css` | The shell |
 | `.github/workflows/deploy.yml` | Build + deploy, triggered by push / manual only |
 
-## Register a pile
+## Register a Tell
 
-Add an entry to `_data/piles.yml` (a registry change, so a one-time build picks it up):
+Atlas lists **Tells**, not piles. A Tell is listed by opening a PR that appends its entry to
+`_data/tells.yml` — the consent gesture. The PR is opened on a **`tell/<scope>/<id>`** branch and its
+commit is **signed with the Tell's delivery-signer key**, so the branch name claims the Tell's identity
+and the signature proves ownership of it; the entry records that signer fingerprint as the open anchor
+(see [`CONTRACT.md`](CONTRACT.md) → "Registering a Tell"). The canonical tooling for opening this PR
+lives in the [Tell repo](https://github.com/FCCN-ANTIBODY/tell.anecdote.channel) (`bin/register`).
+
+```yaml
+- id: my-tell
+  name: "Human-readable name"
+  url: "https://my-tell.example"
+  scope: district
+  signer: "SHA256:…"            # the Tell's keys/tell.fpr — the ownership anchor
+  reports: "reports/govern-*"    # where it publishes the transparency reports Atlas aggregates
+```
+
+To be listed is to accept addressability, reporting in the shape Atlas aggregates, affirmative
+escalation into all constituency aggregations, and the open line (see
+[`CONSTITUTION.md`](CONSTITUTION.md)). Adding or removing a Tell rebuilds the shell once.
+
+## Group a pile behind a Tell
+
+A pile reached through a listed Tell may *also* place a coarse public map. Add an entry to
+`_data/piles.yml` (a registry change, so a one-time build picks it up) naming the Tell it groups behind:
 
 ```yaml
 - id: my-poll
   name: "Human-readable name"
   level: district
+  tell: my-tell                  # the Tell this pile is reached through
   map: "/piles/my-poll/map.xml"   # Atlas-hosted path the gateway places data at
 ```
 

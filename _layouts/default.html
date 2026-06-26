@@ -10,13 +10,14 @@
 <body>
   <header class="site-header">
     <a class="site-title" href="{{ '/' | relative_url }}">{{ site.title }}</a>
-    <span class="site-tag">reflection api</span>
+    <span class="site-tag">directory of Tells</span>
+    <nav class="site-nav"><a href="{{ '/tells/' | relative_url }}">Tells</a> · <a href="{{ '/needs/' | relative_url }}">What's hanging</a></nav>
   </header>
   <main>
     {{ content }}
   </main>
   <footer class="site-footer">
-    <p>Atlas reflects moderated snapshots published by anecdote.channel data-piles.</p>
+    <p>Atlas lists the Tells that front anecdote.channel data-piles, and reflects the coarse maps the piles behind them place here.</p>
   </footer>
 </body>
 </html>
