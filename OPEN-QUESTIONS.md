@@ -106,3 +106,13 @@ elsewhere.
     and **proves the request is authorized**. The Atlas-side handle for "this is a legitimate judgement
     request" is its `needs/` board — but that is Atlas-specific, not a Tell notion, so it does not
     generalize down a tier. The authorization model for a shared judge is unsettled.
+- **Elective (opt-in) judgement, and who pays for it.** Beyond *gating* registration, the same judge can
+  be **summoned electively** by a node that wants its own boundary governed — judgement as a service it
+  opts into, not a checkpoint imposed on it. (The pile-side governor in **closed
+  [data-pile #6](https://github.com/FCCN-ANTIBODY/data-pile/pull/6)** — `bin/accept` + `questions/`
+  guidance + an acceptance ledger — is the historical record of wanting exactly this; it was set aside as
+  unsafe-by-default, but it can only ever land as an *optional* action, which is this question.) Open:
+  how the cost/authority is sourced — the requester's **own private credentials** (they bring their own
+  judge budget) vs. a **timeshare** on the Tell's or Atlas's judge capacity (the parent lends cycles under
+  its own quota, against the fixed-bucket constraint above). Same authorization gap, seen from the
+  *spender's* side rather than the gatekeeper's.
