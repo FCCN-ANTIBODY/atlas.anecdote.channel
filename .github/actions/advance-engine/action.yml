@@ -1,0 +1,78 @@
+name: Advance atlas pin
+description: >-
+  Rolls the calling workspace's atlas/ submodule pin forward to the latest atlas
+  HEAD — but only when that latest HEAD still builds the atlas site cleanly.
+  Fetches the current atlas tip, checks it out in the submodule, and builds the
+  atlas site; on a clean build the new pin is committed and pushed, on a failed
+  build the submodule is reverted to the committed (last-known-good) pin and
+  nothing is written back, so a broken atlas HEAD can never displace the
+  known-good pin. This is atlas's self-hosted mirror of journal's advance-engine,
+  kept in this repo so a workspace can `uses:` the naturally pinned source
+  version over its submodule path and a fork can drop atlas by deleting one job.
+
+  Runs in the *workspace* context, where atlas is mounted at atlas/ — not in
+  atlas's own repo. atlas self-deploys via its own deploy.yml, so the build here
+  only gates the pin advance: it never deploys and never writes a fallback notice
+  (the workspace tracks atlas's pin, it does not publish the atlas site). That is
+  why this is simpler than journal's advance-engine, whose build IS the deployed
+  site and therefore carries the last-known-good notice machinery.
+
+runs:
+  using: composite
+  steps:
+    - name: Record last-known-good atlas SHA
+      run: echo "ATLAS_LKG_SHA=$(git -C atlas rev-parse HEAD)" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Fetch latest atlas tip
+      run: |
+        git -C atlas fetch origin main
+        echo "ATLAS_LATEST_SHA=$(git -C atlas rev-parse FETCH_HEAD)" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Advance atlas to latest
+      run: git -C atlas checkout "$ATLAS_LATEST_SHA"
+      shell: bash
+
+    - name: Setup Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: "3.3"
+        bundler-cache: true
+        working-directory: atlas
+
+    - name: Build atlas at latest (gate)
+      id: build
+      # Committed binstub, same invocation as atlas's own deploy.yml: bare
+      # `bundle exec jekyll` fails to resolve under the pinned Bundler.
+      run: bin/jekyll build --trace
+      working-directory: atlas
+      continue-on-error: true
+      shell: bash
+
+    - name: Revert atlas to last-known-good on build failure
+      if: steps.build.outcome == 'failure'
+      run: git -C atlas checkout "$ATLAS_LKG_SHA"
+      shell: bash
+
+    - name: Roll atlas pin forward (only on a clean latest build)
+      if: steps.build.outcome == 'success'
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git diff --quiet atlas || {
+          git add atlas
+          git commit -m "ci: roll atlas forward to $ATLAS_LATEST_SHA [skip ci]"
+          # Race-safe push: the workspace updater advances journal/atlas/tell
+          # pins in parallel jobs that all push to main. Each job stages only its
+          # own submodule path, so a concurrent advance is always a conflict-free
+          # rebase. Retry the push on rejection.
+          pushed=
+          for attempt in 1 2 3 4 5; do
+            if git push origin main; then pushed=1; break; fi
+            git fetch origin main
+            git rebase origin/main || { git rebase --abort; break; }
+          done
+          [ -n "$pushed" ] || { echo "push to main failed after retries" >&2; exit 1; }
+        }
+      shell: bash
