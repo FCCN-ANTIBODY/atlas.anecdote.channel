@@ -13,6 +13,7 @@ permalink: /piles.json
     "id": {{ pile.id | jsonify }},
     "name": {{ pile.name | jsonify }},
     "level": {{ pile.level | jsonify }},
+    "tell": {{ pile.tell | jsonify }},
     "map": {{ pile.map | jsonify }},
     "branch": {{ pile.branch | jsonify }},
     "signer": {{ pile.signer | jsonify }}

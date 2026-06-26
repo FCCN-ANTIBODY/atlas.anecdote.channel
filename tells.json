@@ -1,0 +1,21 @@
+---
+# Build-time manifest: the public directory of Tells this Atlas lists, rendered from
+# _data/tells.yml. This is the machine-readable face of the directory — who Atlas lists,
+# the url each answers at, and the signer fingerprint anchoring each Tell's ownership.
+# No network IO at build.
+layout: null
+permalink: /tells.json
+---
+{%- assign tells = site.data.tells -%}
+[
+{%- for tell in tells -%}
+  {
+    "id": {{ tell.id | jsonify }},
+    "name": {{ tell.name | jsonify }},
+    "url": {{ tell.url | jsonify }},
+    "scope": {{ tell.scope | jsonify }},
+    "signer": {{ tell.signer | jsonify }},
+    "reports": {{ tell.reports | jsonify }}
+  }{%- unless forloop.last -%},{%- endunless -%}
+{%- endfor -%}
+]
