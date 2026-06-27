@@ -17,6 +17,8 @@ recently each slice was published.
 Atlas binds itself to one document: its [constitution](/CONSTITUTION.md) — what it will and won't do
 with what piles place here.
 
+<div id="scan" hidden></div>
+
 <div id="atlas">
   <noscript>
     This browser reflects piles at runtime and needs JavaScript. The registry is at
@@ -25,4 +27,8 @@ with what piles place here.
   </noscript>
 </div>
 
+<!-- scan.js runs first: a baked locator QR opens this hub as /?node=<atlas>&home=<scope>, and it
+     fills the scanner's state and redirects (or shows the missing-in-state page). With no `node`
+     it no-ops and atlas.js renders the directory below. -->
+<script src="{{ '/assets/scan.js' | relative_url }}" defer></script>
 <script src="{{ '/assets/atlas.js' | relative_url }}" defer></script>

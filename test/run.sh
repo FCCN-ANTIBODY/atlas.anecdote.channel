@@ -27,4 +27,33 @@ echo "[3] registry + manifest parse"
 ruby -ryaml -e 'YAML.load_file("_data/needs.yml")' || fail "_data/needs.yml not valid YAML"
 ok "_data/needs.yml parses"
 
+echo "[4] bin/widget bakes the node's geo-less locator stem"
+W4="$(bin/widget --atlas demo --scope colorado --updated 2026-06-27)"
+grep -q 'data-node="demo.colorado.anecdote.channel"' <<<"$W4" || fail "widget missing resolved host"
+grep -q '?node=demo&amp;home=colorado' <<<"$W4" || fail "widget missing geo-less locator (node+home)"
+grep -q 'class="anecdote-widget"' <<<"$W4" || fail "widget missing the shared fragment contract"
+ok "widget renders <atlas>.<scope> host + hub locator + anecdote-widget contract"
+# A moniker is a DNS label and nothing else — a bad one must be refused, never host-injected.
+if bin/widget --atlas 'bad label' --scope colorado >/dev/null 2>&1; then
+  fail "bin/widget accepted a non-DNS-label moniker"
+fi
+ok "bin/widget refuses a moniker that isn't a clean DNS label"
+
+echo "[5] scan.js routes a scan by the scanner's state"
+node -e '
+  const s = require("./assets/scan.js");
+  const A = "anecdote.channel";
+  const eq = (a, b, m) => { if (JSON.stringify(a) !== JSON.stringify(b)) { console.error("FAIL: " + m + " got " + JSON.stringify(a)); process.exit(1); } };
+  eq(s.deriveApex("atlas.anecdote.channel"), A, "deriveApex");
+  eq(s.stateSlug(" Colorado "), "colorado", "stateSlug normalizes");
+  eq(s.stateSlug("../evil"), "", "stateSlug rejects junk");
+  eq(s.route({ node: "demo", home: "colorado", state: "colorado", apex: A }),
+     { action: "redirect", url: "https://demo.colorado.anecdote.channel/" }, "in-state redirects");
+  eq(s.route({ node: "demo", home: "colorado", state: "texas", apex: A }).action, "missing", "out-of-state is missing");
+  eq(s.route({ node: "demo", home: "colorado", state: "", apex: A }).action, "missing", "unknown state is missing");
+  eq(s.route({ node: "", home: "colorado", state: "colorado", apex: A }).action, "none", "no node -> directory");
+  eq(s.buildTarget({ node: "my.atlas", state: "colorado", apex: A }), "https://my.atlas.colorado.anecdote.channel/", "multi-label stem");
+' || fail "scan.js routing logic"
+ok "in-state -> redirect; out-of-state/unknown -> missing-in-state; no node -> directory"
+
 echo "ALL TESTS PASSED"
