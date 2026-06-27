@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# bin/bill — assemble this Atlas's outbound BILL: the bounded list of needs it currently wants a
+# friend Atlas to find. A bill is just a needs-shaped list (the _data/needs.yml entries, each
+# carrying its `constitution:` pointer so the answering judge can read it), capped at a block
+# size. This is the asker side of the request->match->answer lifecycle (CONTRACT.md -> "Requested
+# search from a peer"): a peer files this bill onto an examine-not-merge `request/<scope>/<id>`
+# branch in a friend's repo, and the friend answers by running its OWN matcher over it
+# (`bin/match` with ATLAS_NEEDS=<the bill>), judged by ATLAS_MATCH_CMD.
+#
+# This is the OFFLINE, pure half — it assembles and prints the bill. The cross-repo emit (push +
+# examine-not-merge PR to a peer) is the lifecycle's live half, scaffolded in
+# .github/actions/request-search but not yet wired (OPEN-QUESTIONS.md #6).
+#
+#   bin/bill bill [--max N]   # print this Atlas's bill (needs-shaped YAML; default cap 25)
+#   bin/bill branch           # print the branch a peer files it under: request/<scope>/<id>
+#
+# Asker-side governance — WHICH asks to include, and how to prioritize/size them within the block
+# — is deliberately minimal here (take the first --max in file order). Curating a bill is the real
+# point of inspection and is deferred (OPEN-QUESTIONS.md #7); the bounded block is the only floor.
+#
+# Env: ATLAS_YML (default atlas.yml), ATLAS_NEEDS (default _data/needs.yml), BILL_MAX (default 25).
+set -euo pipefail
+die() { echo "bill: $*" >&2; exit 1; }
+
+atlas_yml="${ATLAS_YML:-atlas.yml}"
+needs_file="${ATLAS_NEEDS:-_data/needs.yml}"
+[ -f "$atlas_yml" ] || die "no Atlas identity at $atlas_yml (set ATLAS_YML, or run from the Atlas repo root)"
+
+# Minimal flat-YAML scalar reader for atlas.yml's id/scope (same reader bin/register-atlas uses).
+ty() {
+  local v
+  v="$(sed -n "s/^$1:[[:space:]]*//p" "$atlas_yml" | head -1)"
+  if [ "${v#\"}" != "$v" ]; then
+    v="${v#\"}"; v="${v%%\"*}"
+  else
+    v="$(printf '%s' "$v" | sed -e 's/[[:space:]][[:space:]]*#.*$//' -e 's/[[:space:]]*$//')"
+  fi
+  printf '%s' "$v"
+}
+id="$(ty id)"; scope="$(ty scope)"
+[ -n "$id" ] && [ -n "$scope" ] || die "atlas.yml needs at least id and scope"
+branch="request/${scope}/${id}"
+
+cmd="${1:-bill}"; shift || true
+max="${BILL_MAX:-25}"
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --max) max="${2:-}"; [ -n "$max" ] || die "--max needs a number"; shift 2;;
+    *) die "unknown arg: $1";;
+  esac
+done
+
+case "$cmd" in
+  branch) printf '%s\n' "$branch" ;;
+  bill)
+    [ -f "$needs_file" ] || die "no needs registry at $needs_file (set ATLAS_NEEDS)"
+    command -v ruby >/dev/null 2>&1 || die "ruby required to assemble the bill (stdlib yaml)"
+    # Take the first --max needs in file order, keep the recognized fields in a stable order, and
+    # emit a needs-shaped YAML list the existing matcher consumes verbatim via ATLAS_NEEDS.
+    BILL_MAX="$max" ruby -ryaml - "$needs_file" <<'RUBY'
+# encoding: utf-8
+needs = YAML.load_file(ARGV[0]) || []
+max   = Integer(ENV.fetch("BILL_MAX", "25"))
+keys  = %w[id asker_repo scope topic terms need_url constitution]
+bill  = needs.first(max).map { |n| keys.each_with_object({}) { |k, h| h[k] = n[k] if n.key?(k) } }
+bill.each do |n|
+  c = n["constitution"].to_s
+  STDERR.puts "bill: warning: need #{n['id']} has no constitution: a remote judge can't assess it" if c.empty?
+end
+STDERR.puts "bill: #{bill.length} need(s) (cap #{max}, #{needs.length} on offer)"
+puts YAML.dump(bill)
+RUBY
+    ;;
+  *) die "usage: bin/bill {bill|branch} [--max N]" ;;
+esac

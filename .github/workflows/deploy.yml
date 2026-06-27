@@ -10,6 +10,11 @@ on:
       # pile/<scope>/<id> ref out-of-band, and these commits must never trigger a
       # Pages build (keeps builds narrow — N piles never cause N rebuilds).
       - 'pile/**'
+      # Peer-registration branches (a peer Atlas's atlas/<scope>/<id> introduction PR)
+      # and inbound request "bill" branches (request/<scope>/<id>, examine-not-merge):
+      # both are signal channels, never site content — they must not spawn a build.
+      - 'atlas/**'
+      - 'request/**'
   # Manual rebuild.
   workflow_dispatch:
 
