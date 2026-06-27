@@ -15,6 +15,11 @@ Atlas **does not register data-piles directly**, and it never fronts pile data. 
 and delivering a pile its full-fidelity encrypted digests is a **Tell's** job — Atlas lists Tells and
 reflects the coarse public maps the piles behind them place here. A pile is reached *through* its Tell.
 
+The why-shaped map is [`AGENTS.md`](AGENTS.md); the binding law is [`CONSTITUTION.md`](CONSTITUTION.md);
+the wire-level spec is [`CONTRACT.md`](CONTRACT.md); where this is going is [`ROADMAP.md`](ROADMAP.md).
+What's deferred for the whole constellation lives in one place, the workspace's
+[`OPEN-QUESTIONS.md`](https://github.com/FCCN-ANTIBODY/civic-node/blob/main/OPEN-QUESTIONS.md).
+
 ## Atlas's constitution
 
 Atlas governs itself by a single document, [`CONSTITUTION.md`](CONSTITUTION.md), served live at

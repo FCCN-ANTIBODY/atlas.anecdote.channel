@@ -7,15 +7,16 @@ description: >
 
   SCAFFOLD: the offline bill assembly (bin/bill) is real and runs here; the LIVE cross-repo emit
   (push the request branch to the peer + open the PR) is deferred pending FCCN-ANTIBODY/judge and
-  a second live Atlas (CONTRACT.md -> "Requested search from a peer"; OPEN-QUESTIONS.md #6). This
-  action performs NO cross-repo write yet — it assembles the bill and reports what it would file.
+  a second live Atlas (CONTRACT.md -> "Requested search from a peer"; see "D. Cross-Atlas peering"
+  in civic-node's OPEN-QUESTIONS.md). This action performs NO cross-repo write yet — it assembles
+  the bill and reports what it would file.
 
 inputs:
   peer:
     description: "Friend Atlas repo to bill (owner/name). Required — you bill a DIFFERENT Atlas."
     required: true
   max:
-    description: "Block size: cap on how many needs this bill carries (asker-side curation is deferred, OPEN-QUESTIONS #7)."
+    description: "Block size: cap on how many needs this bill carries (asker-side curation is deferred; see 'D. Cross-Atlas peering' in civic-node's OPEN-QUESTIONS.md)."
     required: false
     default: "25"
   needs:

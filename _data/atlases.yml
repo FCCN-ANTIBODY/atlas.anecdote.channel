@@ -15,7 +15,8 @@
 # public /needs.json board), this Atlas's matcher runs its real judge over its OWN piles/Tells,
 # and an accepted match returns to the friend as a signed PR that modifies the line for an
 # address the friend knows. That request -> match -> answer automation is specced but NOT yet
-# built (see OPEN-QUESTIONS.md); this registry + the peer handshake are the foundation it sits on.
+# built (see "D. Cross-Atlas peering" in civic-node's OPEN-QUESTIONS.md); this registry + the
+# peer handshake are the foundation it sits on.
 #
 # Each entry:
 #   id      stable slug for the peer Atlas (also its branch segment: atlas/<scope>/<id>)

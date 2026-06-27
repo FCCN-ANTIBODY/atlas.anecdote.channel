@@ -16,5 +16,6 @@
 # _data/atlases.yml is honored, and it is kept OFF the public /needs.json board — it is the
 # friend's need, not this constituency's. The accepted matches return as one bulk signed PR to
 # the asking peer (one hop, invitation not delivery). See CONTRACT.md -> "Requested search from
-# a peer". The live emit/answer automation is scaffolded but not yet wired (OPEN-QUESTIONS.md #6).
+# a peer". The live emit/answer automation is scaffolded but not yet wired (see "D. Cross-Atlas
+# peering" in civic-node's OPEN-QUESTIONS.md).
 []

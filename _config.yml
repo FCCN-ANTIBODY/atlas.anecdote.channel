@@ -12,10 +12,11 @@ plugins: []
 # Docs are notes, not site pages. The seed maps under piles/ ARE served so the
 # runtime client renders each slice offline / before the gateway places live data.
 exclude:
+  - AGENTS.md
   - CONTRACT.md
   - DNS.md
   - README.md
-  - OPEN-QUESTIONS.md
+  - ROADMAP.md
   - Gemfile
   - Gemfile.lock
   - bin/

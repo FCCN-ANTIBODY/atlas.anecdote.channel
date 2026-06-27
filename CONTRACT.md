@@ -13,7 +13,8 @@ This document pins the three interfaces Atlas implements:
 2. **Atlas ↔ Atlas** — how this Atlas peers with another by prior mutual introduction, and the
    reciprocal-discovery deal that follows: a registered peer may *truthfully trigger* this Atlas's
    matcher. The peer handshake is built; the request→match→answer automation is specced (see
-   "Peering with another Atlas" below and `OPEN-QUESTIONS.md`).
+   "Peering with another Atlas" below and the workspace's
+   [`OPEN-QUESTIONS.md`](https://github.com/FCCN-ANTIBODY/civic-node/blob/main/OPEN-QUESTIONS.md#d-cross-atlas-peering-the-bill)).
 3. **The coarse public map** a pile *behind a listed Tell* may place onto Atlas, served from Atlas's
    own domain. This is the older "reflection" surface; it is now framed as a property of a pile that
    has already grouped behind a Tell, not a way to register a pile directly.
@@ -128,7 +129,7 @@ here, run in **clear, bounded chunks**.
 
 The flow (the data structures + `bin/bill` + the `request-search`/`answer-bills` actions are scaffolded;
 the live cross-Atlas emit and answer-PR are deferred until `FCCN-ANTIBODY/judge` and a second live Atlas
-exist — see `OPEN-QUESTIONS.md #6`):
+exist — see [`OPEN-QUESTIONS.md` → "D. Cross-Atlas peering"](https://github.com/FCCN-ANTIBODY/civic-node/blob/main/OPEN-QUESTIONS.md#d-cross-atlas-peering-the-bill)):
 
 1. **Put out the bill.** The asking Atlas files its bill with a friend as a **signed PR on a
    `request/<scope>/<id>` branch** that scopes the asker recognizably — opened, like every gesture here,
@@ -141,7 +142,8 @@ exist — see `OPEN-QUESTIONS.md #6`):
    An ask stays alive only while the asker **re-includes** it in the next bill, spending part of its
    bounded **block size** to do so; stop re-asserting it and it is simply gone. The friend keeps no state
    about a peer's asks between cycles. (How an Atlas *curates* its own on-offer asks into a bill is the
-   real point of inspection, and is deferred — `OPEN-QUESTIONS.md #7`.)
+   real point of inspection, and is deferred — see asker-side governance under
+   [`OPEN-QUESTIONS.md` → "D. Cross-Atlas peering"](https://github.com/FCCN-ANTIBODY/civic-node/blob/main/OPEN-QUESTIONS.md#d-cross-atlas-peering-the-bill).)
 3. **Answer in bulk.** The friend runs its matcher over the bill (the same constitutional fit,
    `ATLAS_MATCH_CMD`, over its **own** candidates — internal search and a peer's bill are one matcher, two
    triggers) and returns the accepted matches as **one bulk signed PR back** that modifies the line for
@@ -151,8 +153,9 @@ exist — see `OPEN-QUESTIONS.md #6`):
 The cadence is the **workspace's** to set: a workspace mounting Atlas drives `request-search` (emit a
 bill) and `answer-bills` (answer inbound bills) on its own cron, when it wants — the same self-scheduling
 `match.yml`/`modules-upgrade.yml` already use. This composes with the deferred registration-validation
-check (`OPEN-QUESTIONS.md #4`, now also over `atlas/<scope>/<id>` peer PRs, `request/<scope>/<id>` bill
-branches, and the Atlas signer) and the summonable judge (`#5`).
+check ([`OPEN-QUESTIONS.md` → "B. Registration validation"](https://github.com/FCCN-ANTIBODY/civic-node/blob/main/OPEN-QUESTIONS.md#b-registration-validation-and-idiom-unification),
+now also over `atlas/<scope>/<id>` peer PRs, `request/<scope>/<id>` bill branches, and the Atlas signer)
+and the summonable judge ([§ A](https://github.com/FCCN-ANTIBODY/civic-node/blob/main/OPEN-QUESTIONS.md#a-the-summonable-judge)).
 
 ## Piles group behind a Tell — the coarse public map
 
