@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Publish Atlas's PUBLIC peer-signer material so a peer Atlas can pin it (and confirm it
+# out-of-band / IRL). This is the whole trust handoff for the peer network — there is no
+# GitHub App. Atlas signs its peer-registration commit with an ordinary SSH key
+# (ssh-keygen -Y sign / git commit -S, gpg.format=ssh); a peer records the matching public
+# key + fingerprint as the `signer` anchor in its _data/atlases.yml entry.
+#
+#   bin/publish-signer PUBKEY        # e.g. keys/atlas-signer.pub, or ~/.ssh/id_ed25519.pub
+#
+# Emits, into keys/:
+#   keys/atlas.signers   one allowed-signers line: `atlas <type> <base64> ...`
+#                        (copy this verbatim into a peer's keys/atlas.signers)
+#   keys/atlas.pub       the raw public key
+#   keys/atlas.fpr       the SHA256:… fingerprint a peer pins as `signer:` in atlases.yml
+#
+# The PRIVATE key is never handled here. In CI it lives only as the secret
+# ATLAS_SIGNER_KEY, materialized to a temp file for the one signing call. This mirrors
+# tell's bin/publish-signer one tier up (Atlas<->Atlas instead of Tell->Atlas).
+set -euo pipefail
+here="$(cd "$(dirname "$0")" && pwd)"
+keys="$here/../keys"; mkdir -p "$keys"
+
+pub="${1:-}"
+[ -n "$pub" ] && [ -f "$pub" ] || { echo "usage: bin/publish-signer PATH/TO/signer.pub" >&2; exit 1; }
+
+cp "$pub" "$keys/atlas.pub"
+# allowed-signers: <principal> <key>. Principal "atlas" matches a verifier's -I <source>.
+printf 'atlas %s\n' "$(cat "$pub")" > "$keys/atlas.signers"
+fpr="$(ssh-keygen -lf "$pub" | awk '{print $2}')"
+printf '%s\n' "$fpr" > "$keys/atlas.fpr"
+
+echo "Published Atlas peer-signer:"
+echo "  fingerprint : $fpr   (a peer pins this in its _data/atlases.yml  signer:)"
+echo "  allowed-line: $(cat "$keys/atlas.signers")"
+echo "  -> a peer copies keys/atlas.signers into its own keys/atlas.signers"

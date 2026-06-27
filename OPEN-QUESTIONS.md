@@ -116,3 +116,28 @@ elsewhere.
   judge budget) vs. a **timeshare** on the Tell's or Atlas's judge capacity (the parent lends cycles under
   its own quota, against the fixed-bucket constraint above). Same authorization gap, seen from the
   *spender's* side rather than the gatekeeper's.
+
+## 6. Requested search from a peer Atlas — the request→match→answer automation
+
+`CONTRACT.md` → "Peering with another Atlas" lands the **foundation**: a peer registry
+(`_data/atlases.yml`), an Atlas peer-signer (`keys/atlas.fpr` + `ATLAS_SIGNER_KEY`, via
+`bin/atlas-bootstrap`), and the signed `atlas/<scope>/<id>` introduction gesture (`bin/register-atlas`
++ the `register-peer` action/workflow). What is **not** built is the live mechanism that lets a listed
+peer *truthfully trigger this Atlas's matcher* and get an answer back — the reciprocal half of the deal.
+
+- **Blocks:** cross-Atlas discovery — answering a friend's search over your own piles/Tells; the half of
+  the peering deal that makes a peer entry worth more than a link.
+- **Sketch (unbuilt):** (a) a **separate signed request queue** — a `request/<peer>/<id>` branch or
+  `_data/requests.yml` — appended only by a PR whose commit verifies against a `signer` already in
+  `_data/atlases.yml`, and kept **off** `/needs.json` (it is the peer's need, not this constituency's);
+  (b) a `bin/match` **mode/trigger** that reads the queue and runs the existing judge over this Atlas's
+  own candidates — internal and peer-requested search are one matcher, two triggers; (c) an **answer**
+  step that opens a *signed PR back to the requesting peer* modifying the line for the address it knows
+  (invitation, not delivery — one hop, no routing into the ultimate asker).
+- **Deferred because:** there is **no second live Atlas** to handshake with yet, so the request/answer
+  path can't be exercised end to end; and it is **coupled** to two existing deferrals — the
+  registration-validation check (#4, which must now also cover `atlas/<scope>/<id>` peer PRs and verify
+  against the new Atlas signer) and the **summonable judge** (#5, the same `ATLAS_MATCH_CMD` seam that
+  would judge a requested search). Build it when a real peer exists and #4/#5 land.
+- **Bounded to the first hop:** no transitive federation — a peer's peers are not yours. Connections
+  beyond the first are explicitly out of scope until there is a model for them.
