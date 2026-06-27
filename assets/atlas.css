@@ -56,3 +56,15 @@ a { color: var(--accent); }
 .meta.error, .pile-index li.error { color: #a23b1e; }
 
 .site-footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.8rem; }
+
+/* Missing-in-state scan landing (assets/scan.js): shown when a baked locator QR is scanned but
+   the scanner's state isn't where the directory stands. Never a geo-block — an invitation. */
+.scan-miss { padding: 1.5rem 0; }
+.scan-miss__kicker { margin: 0 0 0.4rem; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); }
+.scan-miss__head { margin: 0 0 0.8rem; font-size: 1.5rem; line-height: 1.25; }
+.scan-miss__lede { margin: 0 0 1rem; font-size: 1.05rem; }
+.scan-miss__lede code, .scan-miss__cta code { background: #f3f4f8; padding: 0.05rem 0.35rem; border-radius: 0.3rem; font-size: 0.95em; }
+.scan-miss__cta { margin: 0 0 1rem; font-size: 1.05rem; font-weight: 600; }
+.scan-miss__cta a { word-break: break-all; }
+.scan-miss__note { margin: 0 0 1rem; color: var(--muted); font-size: 0.9rem; }
+.scan-miss__more { margin: 0; font-size: 0.9rem; }

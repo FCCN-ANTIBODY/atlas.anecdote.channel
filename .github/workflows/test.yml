@@ -1,12 +1,15 @@
 name: test
 
-# Smoke-test the matchmaker (bin/match). The site templates are covered by the build
-# job; this guards the request-for-pile logic.
+# Smoke-test the matchmaker (bin/match), the widget locator baker (bin/widget), and the
+# hub-fill scan router (assets/scan.js). The site templates are covered by the build job;
+# this guards the request-for-pile logic and the baked-QR identity/state-routing layer.
 
 on:
   push:
     paths:
       - "bin/match"
+      - "bin/widget"
+      - "assets/scan.js"
       - "_data/needs.yml"
       - "test/**"
       - ".github/workflows/test.yml"
@@ -21,5 +24,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Matchmaker smoke test
-        run: test/run.sh   # ruby (stdlib) + jq are preinstalled on the runner
+      - name: Smoke tests (matchmaker + widget + scan router)
+        run: test/run.sh   # ruby (stdlib) + jq + node are preinstalled on the runner

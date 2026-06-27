@@ -166,3 +166,41 @@ first `--max` needs in file order — and nothing smarter.
   is premature before a bill is actually carried and weighed.
 - **Note:** this is the asker's own governance of itself; it asks nothing of the friend, who by
   construction (#6) keeps no state to govern.
+
+## 8. The hub geo-fill — the scanner's state, and portability beyond home
+
+The **baked-QR identity** layer is landed as a first step: `bin/widget` (+ the `widget` composite
+action) bakes a node's **geo-less locator stem** into a data-filled fragment — a QR that opens this hub
+as `atlas.anecdote.channel/?node=<atlas>&home=<scope>` — and `assets/scan.js` is the scanner side, which
+**fills the scanner's US state** and redirects to `<atlas>.<state>.anecdote.channel`, or shows the
+**missing-in-state** page (never a geo-block — the auto-marketing surface for a scan that found the idea
+before the idea reached the scanner's state). This is the Atlas tier of the same locator
+[tell bakes](https://github.com/FCCN-ANTIBODY/tell.anecdote.channel/tree/main/.github/actions/widget); a
+Tell hands a two-label stem to the Tell hub, an Atlas hands its single `<atlas>` label to the Atlas hub.
+The **routing logic** is built and tested (`test/run.sh` [5]); two seams are deliberately deferred.
+
+- **The geo source.** `scan.js` reads the scanner's state from an explicit `?state=` (testing / an
+  edge-injected value) or a `window.__ANECDOTE_GEO_STATE` global, and otherwise treats it as unknown —
+  so today every real scan lands on the missing-in-state page (the marketing default we want). The
+  first-party production fill is a **Cloudflare Worker on the apex** reading `request.cf.regionCode`,
+  mapping it to the `<state>` slug, and 302-ing **before the request reaches Pages** — the same Worker
+  tier `workers/piles-gateway` already runs, just on the landing route instead of `/piles/`. Kept out
+  for now: it needs a route + deploy (Cloudflare config, not repo code), and a region→slug table; until
+  then `scan.js` is the static-origin fallback and the marketing page stands.
+  - **Why not a client-side IP-geo call:** it would leak the scanner's IP to a third party, against the
+    constellation's coarse/first-party posture (`CONSTITUTION.md`). The region must come from the edge
+    that already fronts the domain, not a third party.
+- **Portability beyond the home state.** A scan resolves only when the scanner's state **matches** the
+  node's home `scope`; an out-of-state scan is missing-in-state, never a guessed `<atlas>.<other-state>`
+  subdomain that would 404. A directory that genuinely stands in more than one state ("the idea
+  travels") needs a way for `scan.js` (or the Worker) to know **which** states a node resolves in —
+  a small per-node portability manifest, or letting the target's own 404 be the missing-in-state page.
+  Deferred until a node actually registers in a second state.
+- **Mounting in civic-node.** `civic-node`'s build (`antibody.yml`) already renders the **tell** and
+  **journal** widgets with a best-effort probe (`if <engine>/.github/actions/widget/action.yml exists`,
+  then `uses:` it → `widget/<name>.html`). The Atlas widget is the same shape — add an analogous
+  *"Detect / Render this node's Atlas widget"* pair `uses: ./atlas/.github/actions/widget` with
+  `out: widget/atlas.html`, then bump the `atlas/` submodule pin. **Deliberately not mounted yet:** the
+  fragment may change as these nodes blossom into full static site branches under `publish/`, so the
+  producer (this repo) lands first and the consumer (civic-node) waits. The probe pattern means a node
+  whose `atlas/` pin predates this action still builds — the mount is safe whenever it's wanted.
