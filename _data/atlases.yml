@@ -1,0 +1,38 @@
+# Registry of PEER Atlases this Atlas knows by prior mutual introduction — the friends it may
+# DIRECTLY ask to run a search. One hop only: there is no transitive federation yet, so this
+# lists exactly the Atlases this node can reach itself, not their friends. No length limit.
+#
+# A peer is listed here by the PEER opening a signed PR that appends its entry, on an
+# `atlas/<scope>/<id>` branch whose commit is signed with the peer's ATLAS_SIGNER_KEY (public
+# fingerprint published at the peer's keys/atlas.fpr). The branch NAME claims which Atlas is
+# asking; the signature PROVES it; the `signer` field anchors it in the open. Listing is
+# MUTUAL — each side lists the other (the canonical opener is bin/register-atlas, run by the
+# registering Atlas). See CONTRACT.md -> "Peering with another Atlas".
+#
+# The deal is reciprocal — *by getting you give*: to be discoverable in this peer network is
+# to agree to be searched by registered peers. A friend listed here may TRUTHFULLY TRIGGER
+# this Atlas's matcher: an authenticated request lands in a separate queue (kept OFF the
+# public /needs.json board), this Atlas's matcher runs its real judge over its OWN piles/Tells,
+# and an accepted match returns to the friend as a signed PR that modifies the line for an
+# address the friend knows. That request -> match -> answer automation is specced but NOT yet
+# built (see OPEN-QUESTIONS.md); this registry + the peer handshake are the foundation it sits on.
+#
+# Each entry:
+#   id      stable slug for the peer Atlas (also its branch segment: atlas/<scope>/<id>)
+#   name    human-readable label
+#   url     the peer Atlas's own domain (its directory of Tells)
+#   repo    owner/name — the peer's GitHub repo, where request/answer PRs are opened
+#   scope   the jurisdiction/namespace the peer speaks for (which peer to ask for a scope)
+#   signer  the peer's ATLAS signer fingerprint (its keys/atlas.fpr) — the ownership anchor
+#   reports (optional) where the peer publishes the aggregate reports it rolls up
+#
+# Seed below is an illustrative neighbor in a DIFFERENT scope — the point of a peer is a
+# different answerer, so an Atlas never lists itself here (self-reference would only return
+# its own answer). Replace with real peers.
+- id: neighbor
+  name: "Neighbor Atlas (example)"
+  url: "https://atlas.example.org"
+  repo: example-org/atlas.example
+  scope: "wyoming"
+  signer: "SHA256:PLACEHOLDER-neighbor-atlas-signer-fingerprint"
+  reports: "reports/aggregate-*"

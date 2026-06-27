@@ -5,12 +5,16 @@ their responses, and delivers each pile its encrypted digests (see
 [`tell.anecdote.channel`](https://github.com/FCCN-ANTIBODY/tell.anecdote.channel)). Atlas lists Tells
 so the public can find them, and through a listed Tell, the piles that **group up behind it**.
 
-This document pins the two interfaces Atlas implements:
+This document pins the three interfaces Atlas implements:
 
 1. **Tell ↔ Atlas** — how a Tell registers to be listed, what listing requires of it, and how the
    reports a Tell publishes aggregate upward through Atlas. This is Atlas's primary role and the
    subject of most of this document.
-2. **The coarse public map** a pile *behind a listed Tell* may place onto Atlas, served from Atlas's
+2. **Atlas ↔ Atlas** — how this Atlas peers with another by prior mutual introduction, and the
+   reciprocal-discovery deal that follows: a registered peer may *truthfully trigger* this Atlas's
+   matcher. The peer handshake is built; the request→match→answer automation is specced (see
+   "Peering with another Atlas" below and `OPEN-QUESTIONS.md`).
+3. **The coarse public map** a pile *behind a listed Tell* may place onto Atlas, served from Atlas's
    own domain. This is the older "reflection" surface; it is now framed as a property of a pile that
    has already grouped behind a Tell, not a way to register a pile directly.
 
@@ -74,6 +78,59 @@ following. (Atlas's half is attested in [`CONSTITUTION.md`](CONSTITUTION.md).)
   a report on it **earns force as it accumulates**, getting harder for that constituency's real
   representatives to ignore the longer it stands. The line's credibility is earned in the open over
   time, never granted or withheld at the door.
+
+## Peering with another Atlas
+
+Atlas lists Tells; but an Atlas can also know **other Atlases** — friends made by prior mutual
+introduction. This Atlas keeps a registry of its peers in [`_data/atlases.yml`](_data/atlases.yml):
+the Atlases it may **directly** ask, and that may directly ask it. There is no length limit, but the
+reach is **one hop** — a peer's own peers are not yours; there is no chain beyond the first.
+
+**The introduction is the same signed PR-as-consent gesture a Tell makes with an Atlas, one tier up.**
+An Atlas lists itself with a peer by opening a PR that appends its entry to the peer's
+`_data/atlases.yml`, on a branch named **`atlas/<scope>/<id>`**, its commit **signed with the Atlas's
+peer-signer key** (`ATLAS_SIGNER_KEY`, public fingerprint published at `keys/atlas.fpr`). The branch
+name carries the **claim** — *which* Atlas, in *what* scope, is asking to peer — the signature is the
+**proof**, and the entry's `signer:` is the **open anchor**. The canonical opener is `bin/register-atlas`
+(`entry | branch | pr`), wrapped as the `register-peer` composite action and dogfooded by
+`register-peer.yml`. Peering is **never self** — the point of a peer is a *different* answerer, so the
+gesture refuses to run without a peer that is another Atlas. Listing is **mutual**: each side runs the
+gesture against the other, and each keeps the right to drop the other by removing its entry.
+
+An `_data/atlases.yml` entry carries:
+
+| Field | Meaning |
+| --- | --- |
+| `id` | Stable slug for the peer Atlas (also its branch segment: `atlas/<scope>/<id>`). |
+| `name` | Human-readable label. |
+| `url` | The peer Atlas's own domain (its directory of Tells). |
+| `repo` | The peer's GitHub repo (`owner/name`) — where request/answer PRs are opened. |
+| `scope` | The jurisdiction / namespace the peer speaks for. |
+| `signer` | The peer's Atlas-signer fingerprint (`keys/atlas.fpr`) — the **ownership anchor** the registration is signed under. |
+| `reports` | (optional) Where the peer publishes the aggregate reports it rolls up. |
+
+### Requested search from a peer (the reciprocal deal) — *specced, not yet built*
+
+Being discoverable is not free here either: **by getting you give.** To stand in this peer network is
+to accept that a registered peer may **truthfully trigger your matcher** — and "truthfully" is the
+whole point. The friend does not get to assert a result; it gets to make *your* matcher run, honestly,
+over *your* own piles and Tells. So a requested search is just authenticated input into the **existing**
+`bin/match` engine, not a new one, and whatever returns is true because your own judge produced it.
+
+The intended flow, deferred until a real second Atlas exists to exercise it (see `OPEN-QUESTIONS.md`):
+
+1. A peer in your `_data/atlases.yml` puts out a notice — a **signed request** that lands in a
+   **separate queue** (a `request/<peer>/<id>` branch or a `_data/requests.yml`), gated to peers whose
+   `signer` you already list, and kept **off** your public `/needs.json` board (it is the friend's
+   need, not your constituency's).
+2. Your matcher reads the queue and runs the same constitutional fit (`ATLAS_MATCH_CMD`) over your own
+   candidates — internal search and a peer's requested search are the **same matcher**, two triggers.
+3. An accepted match returns to the asking peer as a **signed PR that modifies the line for the address
+   it knows** — the invitation-not-delivery rule, one tier up: you never write into the ultimate asker,
+   only hand your friend what you found, for it to relay home. **One hop.**
+
+This composes with the deferred registration-validation check (`OPEN-QUESTIONS.md #4`, now also over
+`atlas/<scope>/<id>` peer PRs and the new Atlas signer) and the summonable judge (`#5`).
 
 ## Piles group behind a Tell — the coarse public map
 

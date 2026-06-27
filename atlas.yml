@@ -1,0 +1,33 @@
+# Public identity of this Atlas — the entry it registers into a PEER Atlas's
+# _data/atlases.yml. This is the public face of the Atlas; no secrets live here. (Mirror of
+# tell.yml, one tier up: a Tell registers with an Atlas; an Atlas registers as a peer of
+# another Atlas.)
+#
+# bin/register-atlas reads this to assemble the peer entry, and reads the `signer`
+# fingerprint LIVE from keys/atlas.fpr — never copied here — so the published signer and the
+# registered ownership anchor cannot drift.
+
+# Stable slug for this Atlas. Also the <id> segment of the atlas/<scope>/<id> branch the
+# peer-registration PR is opened on.
+id: atlas
+
+# Human-readable label shown in a peer's directory of Atlases.
+name: "Atlas (reference directory)"
+
+# This Atlas's own domain — where its directory of Tells lives. A listed peer must be
+# addressable here.
+url: "https://atlas.anecdote.channel"
+
+# This Atlas's GitHub repo (owner/name). A peer opens request/answer PRs against this repo
+# once the deferred requested-search flow lands (see CONTRACT.md / OPEN-QUESTIONS.md).
+repo: FCCN-ANTIBODY/atlas.anecdote.channel
+
+# The jurisdiction / namespace this Atlas speaks for. Also the <scope> segment of the
+# atlas/<scope>/<id> registration branch, and what a peer filters on to know which Atlas to
+# ask for a given scope.
+scope: colorado
+
+# Where this Atlas publishes the aggregate reports it rolls up from the Tells it lists. (The
+# aggregator itself is deferred — see OPEN-QUESTIONS.md #2 — but the pointer is the surface a
+# peer would consume.)
+reports: "reports/aggregate-*"

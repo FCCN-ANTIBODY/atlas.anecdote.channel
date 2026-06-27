@@ -1,0 +1,134 @@
+#!/usr/bin/env bash
+# bin/register-atlas — the peer-introduction gesture: the Atlas tier of the constellation's
+# canonical PR-as-consent registration. Register THIS Atlas as a PEER of ANOTHER Atlas by
+# opening a PR that appends this Atlas's entry to the peer's _data/atlases.yml, on a branch
+# whose NAME claims this Atlas's ownership of its own instance and whose COMMIT is signed with
+# this Atlas's own key.
+#
+# The PR is opened on an `atlas/<scope>/<id>` branch — the branch NAME claims which Atlas, in
+# which scope, is asking to be a peer — and its commit is signed with the Atlas peer-signer key
+# (ATLAS_SIGNER_KEY, fingerprint published at keys/atlas.fpr). So the signature PROVES the
+# registrant controls that Atlas, and the entry's `signer` field anchors the claim in the open.
+# This is tell's bin/register (a Tell registering with an Atlas) one tier up: Atlas <-> Atlas.
+# See CONTRACT.md -> "Peering with another Atlas".
+#
+# Peering is NEVER self: the whole point of a peer is a DIFFERENT answerer, so PEER_REPO must
+# name another Atlas. Listing is mutual — each side runs this against the other.
+#
+#   bin/register-atlas entry     # print this Atlas's _data/atlases.yml entry (offline, pure)
+#   bin/register-atlas branch    # print the ownership-signing branch: atlas/<scope>/<id>
+#   bin/register-atlas pr        # open the signed peer PR to PEER_REPO (needs gh + token)
+#
+# Env:
+#   PEER_REPO             owner/name of the peer Atlas to register with (required for `pr`;
+#                        no default — peering is never self)
+#   ATLAS_SIGNER_KEY_FILE path to the peer-signer PRIVATE key. When set, `pr` SSH-signs the
+#                        registration commit with it (the ownership proof). Without it, `pr`
+#                        warns and commits unsigned (the claim won't verify).
+#   ATLAS_YML            path to this Atlas's identity (default: atlas.yml) — a testing seam.
+#   ATLAS_FPR_FILE       path to the signer fingerprint (default: keys/atlas.fpr).
+#   GH_TOKEN             token with Contents+PR write on the PEER (for `pr`). Without it,
+#                        `pr` prints the entry + branch to paste by hand.
+set -euo pipefail
+
+# DATA (this Atlas's identity + published fingerprint) resolves to the CURRENT directory — the
+# workspace — never to this script's own checkout. That code-vs-data split (the same one tell's
+# register makes) lets this script be loaded as a composite action over a CONSUMER's repo: it
+# registers THEIR Atlas, signed with THEIR key, not the template's. Both paths are overridable;
+# run from the Atlas repo root for CLI use.
+die() { echo "register-atlas: $*" >&2; exit 1; }
+
+atlas_yml="${ATLAS_YML:-atlas.yml}"
+fpr_file="${ATLAS_FPR_FILE:-keys/atlas.fpr}"
+[ -f "$atlas_yml" ] || die "no Atlas identity at $atlas_yml (set ATLAS_YML, or run from the Atlas repo root) — never register another Atlas's identity"
+[ -f "$fpr_file" ] || die "no signer fingerprint at $fpr_file — run bin/atlas-bootstrap to publish the signer first"
+
+# Minimal flat-YAML scalar reader: `ty KEY` -> value. Handles a quoted scalar (takes what is
+# between the first pair of quotes) and an unquoted scalar with a trailing `# inline comment`
+# (a `#` starts a comment only after whitespace, per YAML), rstripped.
+ty() {
+  local v
+  v="$(sed -n "s/^$1:[[:space:]]*//p" "$atlas_yml" | head -1)"
+  if [ "${v#\"}" != "$v" ]; then
+    v="${v#\"}"; v="${v%%\"*}"
+  else
+    v="$(printf '%s' "$v" | sed -e 's/[[:space:]][[:space:]]*#.*$//' -e 's/[[:space:]]*$//')"
+  fi
+  printf '%s' "$v"
+}
+
+id="$(ty id)"; scope="$(ty scope)"; url="$(ty url)"; name="$(ty name)"; repo="$(ty repo)"; reports="$(ty reports)"
+signer="$(cat "$fpr_file")"
+[ -n "$id" ] && [ -n "$scope" ] || die "atlas.yml needs at least id and scope"
+
+peer_repo="${PEER_REPO:-}"
+branch="atlas/${scope}/${id}"
+
+emit_entry() {
+  cat <<YAML
+- id: ${id}
+  name: "${name}"
+  url: "${url}"
+  repo: ${repo}
+  scope: "${scope}"
+  signer: "${signer}"
+  reports: "${reports}"
+YAML
+}
+
+case "${1:-entry}" in
+  entry)  emit_entry ;;
+  branch) printf '%s\n' "$branch" ;;
+  pr)
+    command -v git >/dev/null 2>&1 || die "git required for pr"
+    [ -n "$peer_repo" ] || die "PEER_REPO required (the peer Atlas to register with) — peering is never self"
+    entryf="$(mktemp)"; emit_entry > "$entryf"
+    if [ -z "${GH_TOKEN:-}" ]; then
+      echo "::warning::No GH_TOKEN — paste this into ${peer_repo}/_data/atlases.yml on branch ${branch}:" >&2
+      cat "$entryf"; exit 0
+    fi
+    command -v gh >/dev/null 2>&1 || die "gh required for pr (or unset GH_TOKEN to print the entry)"
+    tmp="$(mktemp -d)"; cd "$tmp"
+    gh repo clone "$peer_repo" peer -- --depth 1
+    cd peer
+    git switch -c "$branch"
+    # Idempotent by id: update this Atlas's entry in place if it's already listed (or if a
+    # placeholder seed carries the same id), else append. Re-registering must not duplicate the
+    # entry. The id is the stable per-Atlas slug (the <id> of the branch), so matching on it is
+    # matching the Atlas. The header comment and other peers are kept.
+    reg="_data/atlases.yml"
+    if [ -f "$reg" ] && grep -qE "^- id: ${id}([[:space:]]|\$)" "$reg"; then
+      awk -v id="$id" '
+        /^- id: / { drop = ($0 == "- id: " id) || ($0 ~ ("^- id: " id "[[:space:]]")) }
+        !drop
+      ' "$reg" > "$reg.tmp" && mv "$reg.tmp" "$reg"
+    fi
+    cat "$entryf" >> "$reg"
+    git config user.name  "atlas-register"
+    git config user.email "atlas-register@users.noreply.github.com"
+    git add "$reg"
+    # Already listed identically (e.g. a re-run): nothing to register, no empty PR.
+    if git diff --cached --quiet; then
+      echo "register-atlas: ${id} (${scope}) already listed identically in ${peer_repo}/_data/atlases.yml — nothing to do" >&2
+      exit 0
+    fi
+    if [ -n "${ATLAS_SIGNER_KEY_FILE:-}" ] && [ -f "$ATLAS_SIGNER_KEY_FILE" ]; then
+      git -c gpg.format=ssh -c user.signingkey="$ATLAS_SIGNER_KEY_FILE" \
+          commit -S -q -m "peer atlas ${id} (${scope})"
+      echo "register-atlas: signed the peer-registration commit with the Atlas peer-signer (${signer})" >&2
+    else
+      echo "::warning::No ATLAS_SIGNER_KEY_FILE — committing UNSIGNED; the ownership claim won't verify against ${signer}." >&2
+      git commit -q -m "peer atlas ${id} (${scope})"
+    fi
+    git push -u origin "$branch"
+    gh pr create --repo "$peer_repo" --base main --head "$branch" \
+      --title "Peer Atlas ${id} (${scope})" \
+      --body "$(printf '%s\n' \
+        "Registering this Atlas as a peer of your directory (see CONTRACT.md -> \"Peering with another Atlas\")." \
+        "" \
+        "- Branch \`${branch}\` claims this Atlas's identity; the commit is signed with the Atlas peer-signer key, fingerprint \`${signer}\` — the \`signer\` anchor in the appended entry." \
+        "- This Atlas is addressable at ${url} (${repo})." \
+        "- By accepting, both directories agree to the reciprocal deal: a registered peer may truthfully trigger the other's matcher. No write access to this Atlas's repo is requested." )"
+    ;;
+  *) die "usage: bin/register-atlas {entry|branch|pr}" ;;
+esac

@@ -1,0 +1,39 @@
+name: register-peer
+
+# Owner-initiated registration of THIS Atlas as a PEER of another Atlas directory. Opens a
+# consent PR on the peer adding this Atlas's entry to _data/atlases.yml, on an
+# `atlas/<scope>/<id>` branch whose commit is SIGNED with this Atlas's peer-signer key — the
+# branch names the ownership claim, the signature proves it, the entry's `signer` field anchors
+# it. See CONTRACT.md -> "Peering with another Atlas".
+#
+# The work itself is the reusable `register-peer` composite action (.github/actions/register-peer),
+# which any Atlas drops into its own repo to list itself as a peer of another; this workflow just
+# dogfoods it over this repo's own atlas.yml + keys/atlas.fpr.
+#
+# Peering is NEVER self — `peer` is required and must name a DIFFERENT Atlas (self-reference would
+# only return your own answer; the point of a peer is a different answerer). Trust runs one way:
+# NO write access to this Atlas is requested. The cross-repo reach is the reciprocal-discovery
+# handshake — ATLAS_PR_TOKEN (Contents+PR write on the PEER); without it the action prints the
+# entry to paste. ATLAS_SIGNER_KEY is the peer-signer secret (bin/atlas-bootstrap); without it the
+# commit is unsigned and the claim won't verify.
+
+on:
+  workflow_dispatch:
+    inputs:
+      peer:
+        description: "Peer Atlas repo to register with (owner/name) — a DIFFERENT Atlas"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  register:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/register-peer
+        with:
+          peer: ${{ inputs.peer }}
+          pr-token: ${{ secrets.ATLAS_PR_TOKEN }}
+          signer-key: ${{ secrets.ATLAS_SIGNER_KEY }}

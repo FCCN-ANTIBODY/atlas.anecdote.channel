@@ -1,0 +1,56 @@
+name: "Atlas register-peer"
+description: >
+  Register the CALLING repo's Atlas as a PEER of another Atlas: open a consent PR that appends
+  this Atlas's entry to the peer's _data/atlases.yml, on an atlas/<scope>/<id> branch whose
+  commit is signed with this Atlas's peer-signer key. The bundled bin/register-atlas is the
+  CODE; the identity (atlas.yml) and published fingerprint (keys/atlas.fpr) are read from the
+  CALLING repo's workspace — so any repo that drops this in registers ITS OWN Atlas, signed
+  with ITS OWN key, never the template's.
+
+  Peering is never self: `peer` must name a DIFFERENT Atlas — the point of a peer is a different
+  answerer. This is tell's register action one tier up (Atlas <-> Atlas). Accepting the PR is
+  the reciprocal-discovery handshake: each side agrees a registered peer may truthfully trigger
+  the other's matcher. See CONTRACT.md -> "Peering with another Atlas".
+
+inputs:
+  peer:
+    description: "Peer Atlas repo to register with (owner/name). Required — peering is never self."
+    required: true
+  pr-token:
+    description: "Token with Contents+PR write on the PEER (ATLAS_PR_TOKEN). Blank => print the entry to paste by hand."
+    required: false
+    default: ""
+  signer-key:
+    description: "SSH private peer-signer key — the ownership proof. Pass a secret. Blank => unsigned (the claim won't verify)."
+    required: false
+    default: ""
+  identity:
+    description: "Path in the CALLING repo to this Atlas's identity file."
+    required: false
+    default: "atlas.yml"
+  fingerprint:
+    description: "Path in the CALLING repo to the published signer fingerprint."
+    required: false
+    default: "keys/atlas.fpr"
+  install-gh:
+    description: "Apt-install gh on the runner (set false if already present)."
+    required: false
+    default: "true"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install gh
+      if: ${{ inputs.install-gh == 'true' }}
+      shell: bash
+      run: command -v gh >/dev/null 2>&1 || { sudo apt-get update && sudo apt-get install -y gh; }
+
+    - name: Open the signed peer-registration PR on the peer Atlas
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.pr-token }}
+        ATLAS_SIGNER_KEY: ${{ inputs.signer-key }}
+        PEER_REPO: ${{ inputs.peer }}
+        ATLAS_YML: ${{ inputs.identity }}
+        ATLAS_FPR_FILE: ${{ inputs.fingerprint }}
+      run: bash "$GITHUB_ACTION_PATH/run.sh"
