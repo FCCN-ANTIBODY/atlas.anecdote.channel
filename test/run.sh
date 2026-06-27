@@ -56,4 +56,25 @@ node -e '
 ' || fail "scan.js routing logic"
 ok "in-state -> redirect; out-of-state/unknown -> missing-in-state; no node -> directory"
 
+echo "[6] scan-router worker fills the scanner's state and 302s"
+WRK="$(mktemp -d)/scan-router.mjs"; cp workers/scan-router/worker.js "$WRK"
+node --input-type=module -e '
+  const m = await import("file://" + process.argv[1]);
+  const eq = (a, b, msg) => { if (a !== b) { console.error("FAIL: " + msg + " got " + JSON.stringify(a)); process.exit(1); } };
+  // state fill: explicit override wins, then US edge region, then the colorado fallback
+  eq(m.fillState(new URLSearchParams("state=texas"), null), "texas", "explicit ?state wins");
+  eq(m.fillState(new URLSearchParams(""), { country: "US", regionCode: "CO" }), "colorado", "US CO -> colorado");
+  eq(m.fillState(new URLSearchParams(""), { country: "US", regionCode: "TX" }), "texas", "US TX -> texas");
+  eq(m.fillState(new URLSearchParams(""), { country: "CA", regionCode: "ON" }), "colorado", "non-US -> default");
+  eq(m.fillState(new URLSearchParams(""), null), "colorado", "no edge geo -> default");
+  eq(m.fillState(new URLSearchParams("state=../evil"), { country: "US", regionCode: "TX" }), "texas", "junk override ignored, falls to geo");
+  eq(m.stem("my.atlas"), "my.atlas", "multi-label stem ok");
+  eq(m.stem("bad label"), "", "non-DNS stem rejected");
+  // end-to-end redirect (cf object faked; the worker only reads request.url + request.cf)
+  const res = await m.default.fetch({ url: "https://atlas.anecdote.channel/?node=demo&state=texas", cf: null });
+  eq(res.status, 302, "redirect status");
+  eq(res.headers.get("location"), "https://demo.texas.anecdote.channel/", "redirect target");
+' "$WRK" || fail "scan-router worker logic"
+ok "override/edge-geo/fallback state fill; DNS-guarded stem; 302 to <stem>.<state>"
+
 echo "ALL TESTS PASSED"

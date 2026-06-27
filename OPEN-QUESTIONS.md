@@ -177,19 +177,25 @@ as `atlas.anecdote.channel/?node=<atlas>&home=<scope>` — and `assets/scan.js` 
 before the idea reached the scanner's state). This is the Atlas tier of the same locator
 [tell bakes](https://github.com/FCCN-ANTIBODY/tell.anecdote.channel/tree/main/.github/actions/widget); a
 Tell hands a two-label stem to the Tell hub, an Atlas hands its single `<atlas>` label to the Atlas hub.
-The **routing logic** is built and tested (`test/run.sh` [5]); two seams are deliberately deferred.
+The **routing logic** is built and tested (`test/run.sh` [5]/[6]); the geo-fill Worker has landed
+proof-grade and the remaining seams (deploy policy, portability) are noted below.
 
-- **The geo source.** `scan.js` reads the scanner's state from an explicit `?state=` (testing / an
-  edge-injected value) or a `window.__ANECDOTE_GEO_STATE` global, and otherwise treats it as unknown —
-  so today every real scan lands on the missing-in-state page (the marketing default we want). The
-  first-party production fill is a **Cloudflare Worker on the apex** reading `request.cf.regionCode`,
-  mapping it to the `<state>` slug, and 302-ing **before the request reaches Pages** — the same Worker
-  tier `workers/piles-gateway` already runs, just on the landing route instead of `/piles/`. Kept out
-  for now: it needs a route + deploy (Cloudflare config, not repo code), and a region→slug table; until
-  then `scan.js` is the static-origin fallback and the marketing page stands.
+- **The geo source — landed, proof-grade.** `workers/scan-router/` is the first-party fill: a Cloudflare
+  Worker on the hub root (`atlas.anecdote.channel/`) that reads `request.cf.regionCode`, maps it through a
+  flat US region→slug table, and 302s to `<node>.<state>.anecdote.channel` **before the request reaches
+  Pages** — the same Worker tier `workers/piles-gateway` already runs, just on the landing route instead
+  of `/piles/`. No SDK and no third party: the only input is the `cf` object the edge already attaches, so
+  the scanner's IP never leaves the edge. `assets/scan.js` stays as the static-origin fallback (and the
+  missing-in-state page) for when the Worker isn't on the route. Tested in `test/run.sh` [6].
+  - **Proof-grade fallback:** a region we can't resolve (no edge geo, a non-US scan, an unmapped state)
+    falls back to `colorado` so a scan always lands somewhere live; a resolved state with no subdomain yet
+    404s on its own host until it comes online. Good enough to prove the path; not the final policy.
+  - **Still needs (not repo code):** the Atlas record flipped to **Proxied** (orange-cloud) so the route
+    can intercept (see `DNS.md`), and `wrangler deploy`. Until deployed, `scan.js` + the marketing page
+    stand.
   - **Why not a client-side IP-geo call:** it would leak the scanner's IP to a third party, against the
-    constellation's coarse/first-party posture (`CONSTITUTION.md`). The region must come from the edge
-    that already fronts the domain, not a third party.
+    constellation's coarse/first-party posture (`CONSTITUTION.md`). The region comes from the edge that
+    already fronts the domain, not a third party.
 - **Portability beyond the home state.** A scan resolves only when the scanner's state **matches** the
   node's home `scope`; an out-of-state scan is missing-in-state, never a guessed `<atlas>.<other-state>`
   subdomain that would 404. A directory that genuinely stands in more than one state ("the idea
