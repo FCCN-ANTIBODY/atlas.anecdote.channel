@@ -19,7 +19,8 @@ name: "Atlas (reference directory)"
 url: "https://atlas.anecdote.channel"
 
 # This Atlas's GitHub repo (owner/name). A peer opens request/answer PRs against this repo
-# once the deferred requested-search flow lands (see CONTRACT.md / OPEN-QUESTIONS.md).
+# once the deferred requested-search flow lands (see CONTRACT.md, and "D. Cross-Atlas peering"
+# in civic-node's OPEN-QUESTIONS.md).
 repo: FCCN-ANTIBODY/atlas.anecdote.channel
 
 # The jurisdiction / namespace this Atlas speaks for. Also the <scope> segment of the
@@ -28,6 +29,6 @@ repo: FCCN-ANTIBODY/atlas.anecdote.channel
 scope: colorado
 
 # Where this Atlas publishes the aggregate reports it rolls up from the Tells it lists. (The
-# aggregator itself is deferred — see OPEN-QUESTIONS.md #2 — but the pointer is the surface a
-# peer would consume.)
+# aggregator itself is deferred — see "C. Aggregation" in civic-node's OPEN-QUESTIONS.md — but
+# the pointer is the surface a peer would consume.)
 reports: "reports/aggregate-*"

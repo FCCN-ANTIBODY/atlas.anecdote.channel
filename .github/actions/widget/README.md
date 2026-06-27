@@ -58,8 +58,9 @@ before the site build that includes it:
 
 `civic-node` already renders the tell and journal widgets this exact way (a best-effort probe
 for `<engine>/.github/actions/widget/action.yml`, then `uses:` it). Adding the Atlas widget is
-the same shape — see **"Mounting in civic-node"** in
-[`OPEN-QUESTIONS.md`](../../../OPEN-QUESTIONS.md); it is **deliberately not mounted yet**.
+the same shape — see **"Mounting the Atlas widget in this workspace"** under the workspace's
+[`OPEN-QUESTIONS.md` → "H. Hub geo-fill"](https://github.com/FCCN-ANTIBODY/civic-node/blob/main/OPEN-QUESTIONS.md#h-hub-geo-fill-widget-mounting-portability);
+it is **deliberately not mounted yet**.
 
 The fragment is written as a **self-contained static file** served at `/widget/atlas.html` —
 it stays out of the engine-managed `_includes/`, so the node build never couples to the

@@ -9,7 +9,8 @@ description: >
 
   SCAFFOLD: the matcher invocation over a bill is real (point `bill` at one to try it); reading the
   request/** branches and delivering the bulk answer PR back are deferred pending FCCN-ANTIBODY/judge
-  and a second live Atlas (OPEN-QUESTIONS.md #6). This action performs NO cross-repo write yet.
+  and a second live Atlas (see "D. Cross-Atlas peering" in civic-node's OPEN-QUESTIONS.md). This
+  action performs NO cross-repo write yet.
 
 inputs:
   match-cmd:

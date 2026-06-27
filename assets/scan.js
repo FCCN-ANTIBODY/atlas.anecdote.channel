@@ -24,8 +24,8 @@
 // testing or injected at the edge) or via `window.__ANECDOTE_GEO_STATE` (a global a geo edge
 // snippet may set). The first-party production fill — a Cloudflare Worker on the apex reading
 // `request.cf.regionCode` and 302-ing before the request ever reaches Pages — is the documented
-// next step (OPEN-QUESTIONS). Until it is wired, real scans land on the missing-in-state page,
-// which is exactly the marketing default we want.
+// next step (see "H. Hub geo-fill" in civic-node's OPEN-QUESTIONS.md). Until it is wired, real
+// scans land on the missing-in-state page, which is exactly the marketing default we want.
 
 (function () {
   "use strict";
@@ -76,7 +76,8 @@
   //   {action:"missing", node, home, state} unknown/out-of-state -> the marketing page
   // Redirect only when the scanner's state matches the node's home `scope` (or no home was
   // carried). Portability — a directory resolving in more than its home state — is a later step
-  // (OPEN-QUESTIONS); until then an out-of-state scan is missing-in-state, never a 404 guess.
+  // (see "H. Hub geo-fill" in civic-node's OPEN-QUESTIONS.md); until then an out-of-state scan is
+  // missing-in-state, never a 404 guess.
   function route(opts) {
     var stem = nodeStem(opts.node);
     if (!stem) return { action: "none" };

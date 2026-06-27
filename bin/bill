@@ -9,14 +9,16 @@
 #
 # This is the OFFLINE, pure half — it assembles and prints the bill. The cross-repo emit (push +
 # examine-not-merge PR to a peer) is the lifecycle's live half, scaffolded in
-# .github/actions/request-search but not yet wired (OPEN-QUESTIONS.md #6).
+# .github/actions/request-search but not yet wired (see "D. Cross-Atlas peering" in civic-node's
+# OPEN-QUESTIONS.md).
 #
 #   bin/bill bill [--max N]   # print this Atlas's bill (needs-shaped YAML; default cap 25)
 #   bin/bill branch           # print the branch a peer files it under: request/<scope>/<id>
 #
 # Asker-side governance — WHICH asks to include, and how to prioritize/size them within the block
 # — is deliberately minimal here (take the first --max in file order). Curating a bill is the real
-# point of inspection and is deferred (OPEN-QUESTIONS.md #7); the bounded block is the only floor.
+# point of inspection and is deferred (see asker-side governance under "D. Cross-Atlas peering" in
+# civic-node's OPEN-QUESTIONS.md); the bounded block is the only floor.
 #
 # Env: ATLAS_YML (default atlas.yml), ATLAS_NEEDS (default _data/needs.yml), BILL_MAX (default 25).
 set -euo pipefail

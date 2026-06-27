@@ -5,7 +5,9 @@
 already attaches (`request.cf.regionCode`), and **302s** to `<stem>.<state>.anecdote.channel`
 before the request reaches Pages. Everything without `?node=` (the directory shell, assets,
 `/tells/`, `/piles/*`) falls through to the GitHub Pages origin. See [`worker.js`](worker.js) for
-the routing logic and [`../../OPEN-QUESTIONS.md`](../../OPEN-QUESTIONS.md) #8 for the design.
+the routing logic and the workspace's
+[`OPEN-QUESTIONS.md` → "H. Hub geo-fill"](https://github.com/FCCN-ANTIBODY/civic-node/blob/main/OPEN-QUESTIONS.md#h-hub-geo-fill-widget-mounting-portability)
+for the design.
 
 This is the **only step left to make scans resolve live** — the code is merged and tested
 (`test/run.sh` [6]); it just isn't on a route yet.
