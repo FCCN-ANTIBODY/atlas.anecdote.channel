@@ -117,27 +117,52 @@ elsewhere.
   its own quota, against the fixed-bucket constraint above). Same authorization gap, seen from the
   *spender's* side rather than the gatekeeper's.
 
-## 6. Requested search from a peer Atlas — the request→match→answer automation
+## 6. Requested search from a peer Atlas — the bill: emit + answer (live half deferred)
 
-`CONTRACT.md` → "Peering with another Atlas" lands the **foundation**: a peer registry
-(`_data/atlases.yml`), an Atlas peer-signer (`keys/atlas.fpr` + `ATLAS_SIGNER_KEY`, via
-`bin/atlas-bootstrap`), and the signed `atlas/<scope>/<id>` introduction gesture (`bin/register-atlas`
-+ the `register-peer` action/workflow). What is **not** built is the live mechanism that lets a listed
-peer *truthfully trigger this Atlas's matcher* and get an answer back — the reciprocal half of the deal.
+`CONTRACT.md` → "Peering with another Atlas" / "Requested search from a peer — the bill" now carries the
+full design, and the **scaffold** is landed: the need shape gains a `constitution:` pointer
+(`_data/needs.yml`, `needs.json`); `_data/requests.yml` is the empty-on-main inbound queue; `bin/bill`
+assembles a bounded, needs-shaped bill (offline, pure); and `request-search` / `answer-bills` are
+composite actions whose **offline halves run** (assemble the bill; run `bin/match` with
+`ATLAS_NEEDS=<bill>` + `ATLAS_MATCH_CMD` over this Atlas's own candidates — internal search and a peer's
+bill are one matcher, two triggers, honest `needs-judgment` default accepts nothing). What is **not** wired
+is the live cross-Atlas half.
 
-- **Blocks:** cross-Atlas discovery — answering a friend's search over your own piles/Tells; the half of
-  the peering deal that makes a peer entry worth more than a link.
-- **Sketch (unbuilt):** (a) a **separate signed request queue** — a `request/<peer>/<id>` branch or
-  `_data/requests.yml` — appended only by a PR whose commit verifies against a `signer` already in
-  `_data/atlases.yml`, and kept **off** `/needs.json` (it is the peer's need, not this constituency's);
-  (b) a `bin/match` **mode/trigger** that reads the queue and runs the existing judge over this Atlas's
-  own candidates — internal and peer-requested search are one matcher, two triggers; (c) an **answer**
-  step that opens a *signed PR back to the requesting peer* modifying the line for the address it knows
-  (invitation, not delivery — one hop, no routing into the ultimate asker).
-- **Deferred because:** there is **no second live Atlas** to handshake with yet, so the request/answer
-  path can't be exercised end to end; and it is **coupled** to two existing deferrals — the
-  registration-validation check (#4, which must now also cover `atlas/<scope>/<id>` peer PRs and verify
-  against the new Atlas signer) and the **summonable judge** (#5, the same `ATLAS_MATCH_CMD` seam that
-  would judge a requested search). Build it when a real peer exists and #4/#5 land.
+- **Blocks:** cross-Atlas discovery in practice — a friend's bill actually reaching a peer and an answer
+  coming back; the half of the peering deal that makes a peer entry worth more than a link.
+- **Unbuilt (the live half):** (a) `request-search` actually pushing the `request/<scope>/<id>` bill
+  branch to the peer and opening the examine-not-merge PR (mirroring `bin/register-atlas`'s `pr`),
+  **signed** and **gated** to a peer whose `signer` is already in `_data/atlases.yml`; (b) `answer-bills`
+  reading those inbound `request/**` branches (not just an explicit `bill` input) and (c) delivering the
+  accepted matches as **one bulk signed PR back** to the asking peer, modifying the line for the address
+  it knows (invitation not delivery — one hop, never routing into the ultimate asker).
+- **Deferred because:** there is **no second live Atlas** to handshake with yet, so the emit/answer path
+  can't be exercised end to end; and it is **coupled** to two existing deferrals — the
+  registration-validation check (#4, which must now also cover `atlas/<scope>/<id>` peer PRs and
+  `request/<scope>/<id>` bill branches, verifying the commit signature against the peer's `signer`) and
+  the **summonable judge** (#5, the `ATLAS_MATCH_CMD` seam that weighs each bill line's constitutional
+  fit — nearly necessary once a bill drags in a constitution per line). Wire it when a real peer exists
+  and #4/#5 land.
+- **No eviction, by construction:** because the bill lives only on a replace-each-cycle branch over an
+  empty-on-main queue, the receiver never tracks or evicts a peer's asks — an ask persists only by the
+  asker **re-including** it (eviction-by-re-inclusion), spending part of its bounded block size.
 - **Bounded to the first hop:** no transitive federation — a peer's peers are not yours. Connections
   beyond the first are explicitly out of scope until there is a model for them.
+
+## 7. Asker-side bill governance — curating one's own on-offer asks
+
+Eviction is handled by re-inclusion (#6): a bill is ephemeral, so the only thing that keeps an ask alive
+is the asker putting it back in the next bill, within a bounded block size. That makes the **asker side**
+the real point of inspection: *which* of an Atlas's on-offer needs go into a bill, in what priority, and
+how the block is sized against a peer's capacity to weigh it. `bin/bill` today does the floor — take the
+first `--max` needs in file order — and nothing smarter.
+
+- **Blocks:** a bill that reflects intent rather than file order; fairness across an asker's own needs
+  over successive cycles (so a low-priority ask isn't starved or a stale one isn't re-sent forever);
+  sizing the block to the friend's judge budget rather than a fixed cap.
+- **Sketch (unbuilt):** a selection/priority seam in `bin/bill` (recency, an explicit `priority:` or
+  `offer:` field on a need, round-robin across cycles) and a negotiated/observed block size per peer.
+  Deferred until the live emit/answer (#6) gives real signal about what a good bill looks like — curation
+  is premature before a bill is actually carried and weighed.
+- **Note:** this is the asker's own governance of itself; it asks nothing of the friend, who by
+  construction (#6) keeps no state to govern.

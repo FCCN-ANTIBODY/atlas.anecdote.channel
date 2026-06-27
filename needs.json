@@ -14,7 +14,8 @@ permalink: /needs.json
     "scope": {{ need.scope | jsonify }},
     "topic": {{ need.topic | jsonify }},
     "terms": {{ need.terms | jsonify }},
-    "need_url": {{ need.need_url | jsonify }}
+    "need_url": {{ need.need_url | jsonify }},
+    "constitution": {{ need.constitution | jsonify }}
   }{%- unless forloop.last -%},{%- endunless -%}
 {%- endfor -%}
 ]

@@ -1,0 +1,20 @@
+# Inbound peer-request queue — the "bills" friend Atlases ask this Atlas to find.
+#
+# This file is EMPTY (`[]`) FOREVER on main, by design. A peer never merges a request here;
+# instead it pushes a bill onto an examine-not-merge branch that scopes the asker recognizably
+# (`request/<scope>/<id>`), where its contents fill this list and are examined ON THE BRANCH.
+# main carries no accumulated requests, so:
+#   - there is nothing for this Atlas to evict — each cycle's bill REPLACES the last on its
+#     branch (eviction-by-re-inclusion: an ask stays alive only while the asker keeps re-sending
+#     it, spending part of its bounded block size; stop re-asserting it and it is gone);
+#   - this Atlas keeps no state about a friend's asks between cycles.
+#
+# A bill is a needs-shaped list (the same fields as _data/needs.yml, each carrying a
+# `constitution:` pointer) so the EXISTING matcher consumes it directly: answering a bill is
+# `bin/match` with ATLAS_NEEDS=<the bill on the branch> and ATLAS_MATCH_CMD=<judge> over THIS
+# Atlas's own piles/Tells. Only a bill from a peer whose `signer` is already in
+# _data/atlases.yml is honored, and it is kept OFF the public /needs.json board — it is the
+# friend's need, not this constituency's. The accepted matches return as one bulk signed PR to
+# the asking peer (one hop, invitation not delivery). See CONTRACT.md -> "Requested search from
+# a peer". The live emit/answer automation is scaffolded but not yet wired (OPEN-QUESTIONS.md #6).
+[]

@@ -109,7 +109,7 @@ An `_data/atlases.yml` entry carries:
 | `signer` | The peer's Atlas-signer fingerprint (`keys/atlas.fpr`) — the **ownership anchor** the registration is signed under. |
 | `reports` | (optional) Where the peer publishes the aggregate reports it rolls up. |
 
-### Requested search from a peer (the reciprocal deal) — *specced, not yet built*
+### Requested search from a peer — the bill (*reciprocal deal; scaffolded, emit/answer deferred*)
 
 Being discoverable is not free here either: **by getting you give.** To stand in this peer network is
 to accept that a registered peer may **truthfully trigger your matcher** — and "truthfully" is the
@@ -117,20 +117,42 @@ whole point. The friend does not get to assert a result; it gets to make *your* 
 over *your* own piles and Tells. So a requested search is just authenticated input into the **existing**
 `bin/match` engine, not a new one, and whatever returns is true because your own judge produced it.
 
-The intended flow, deferred until a real second Atlas exists to exercise it (see `OPEN-QUESTIONS.md`):
+**The unit is a bill, not a single ask.** Rather than dribble one need at a time, an Atlas shows a peer
+the whole **bill** of what it currently needs found from *chez-nous* — the bounded list its `bin/bill`
+assembles from `_data/needs.yml`. Each line carries its asker's **`constitution`** pointer, because the
+judge that weighs fit reads it; a bill is a needs-shaped list precisely so the receiving Atlas's
+**existing** matcher consumes it verbatim (`bin/match` with `ATLAS_NEEDS=<the bill>`). A whole bill drags
+in a constitution per line — far too much to weigh by hand — which is exactly why the summonable judge
+(the `ATLAS_MATCH_CMD` seam; `FCCN-ANTIBODY/judge` the eventual implementation, `#5`) is nearly necessary
+here, run in **clear, bounded chunks**.
 
-1. A peer in your `_data/atlases.yml` puts out a notice — a **signed request** that lands in a
-   **separate queue** (a `request/<peer>/<id>` branch or a `_data/requests.yml`), gated to peers whose
-   `signer` you already list, and kept **off** your public `/needs.json` board (it is the friend's
-   need, not your constituency's).
-2. Your matcher reads the queue and runs the same constitutional fit (`ATLAS_MATCH_CMD`) over your own
-   candidates — internal search and a peer's requested search are the **same matcher**, two triggers.
-3. An accepted match returns to the asking peer as a **signed PR that modifies the line for the address
-   it knows** — the invitation-not-delivery rule, one tier up: you never write into the ultimate asker,
-   only hand your friend what you found, for it to relay home. **One hop.**
+The flow (the data structures + `bin/bill` + the `request-search`/`answer-bills` actions are scaffolded;
+the live cross-Atlas emit and answer-PR are deferred until `FCCN-ANTIBODY/judge` and a second live Atlas
+exist — see `OPEN-QUESTIONS.md #6`):
 
-This composes with the deferred registration-validation check (`OPEN-QUESTIONS.md #4`, now also over
-`atlas/<scope>/<id>` peer PRs and the new Atlas signer) and the summonable judge (`#5`).
+1. **Put out the bill.** The asking Atlas files its bill with a friend as a **signed PR on a
+   `request/<scope>/<id>` branch** that scopes the asker recognizably — opened, like every gesture here,
+   by pushing the branch to the friend's repo (mirroring `bin/register-atlas`). It is honored only from a
+   peer whose `signer` is already in the friend's `_data/atlases.yml`, and it is kept **off** the public
+   `/needs.json` board: it is the friend's need, not this constituency's.
+2. **Examine on the branch, never merge.** `_data/requests.yml` is `[]` **forever on `main`**; the bill
+   fills it only on that branch, where it is examined in place. So `main` accumulates no requests, and —
+   the elegance — there is **nothing to evict**: each cycle's bill *replaces* the last on its branch.
+   An ask stays alive only while the asker **re-includes** it in the next bill, spending part of its
+   bounded **block size** to do so; stop re-asserting it and it is simply gone. The friend keeps no state
+   about a peer's asks between cycles. (How an Atlas *curates* its own on-offer asks into a bill is the
+   real point of inspection, and is deferred — `OPEN-QUESTIONS.md #7`.)
+3. **Answer in bulk.** The friend runs its matcher over the bill (the same constitutional fit,
+   `ATLAS_MATCH_CMD`, over its **own** candidates — internal search and a peer's bill are one matcher, two
+   triggers) and returns the accepted matches as **one bulk signed PR back** that modifies the line for
+   the address the peer knows — the invitation-not-delivery rule, one tier up: you never write into the
+   ultimate asker, only hand your friend what you found, for it to relay home. **One hop.**
+
+The cadence is the **workspace's** to set: a workspace mounting Atlas drives `request-search` (emit a
+bill) and `answer-bills` (answer inbound bills) on its own cron, when it wants — the same self-scheduling
+`match.yml`/`modules-upgrade.yml` already use. This composes with the deferred registration-validation
+check (`OPEN-QUESTIONS.md #4`, now also over `atlas/<scope>/<id>` peer PRs, `request/<scope>/<id>` bill
+branches, and the Atlas signer) and the summonable judge (`#5`).
 
 ## Piles group behind a Tell — the coarse public map
 

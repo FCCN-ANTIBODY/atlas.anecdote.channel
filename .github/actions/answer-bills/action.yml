@@ -1,0 +1,54 @@
+name: "Atlas answer-bills (bulk answer) — scaffold"
+description: >
+  Answerer side of the request->match->answer lifecycle: a friend in _data/atlases.yml has filed a
+  bill on a `request/<scope>/<id>` branch; run THIS Atlas's matcher over it and return the accepted
+  matches as one bulk signed PR back to the friend. Answering a bill is the EXISTING matcher with
+  ATLAS_NEEDS=<the bill> and ATLAS_MATCH_CMD=<judge> over this Atlas's own piles/Tells — internal
+  search and a peer's bill are one judge idiom, two triggers. The honest default (no judge) accepts
+  nothing.
+
+  SCAFFOLD: the matcher invocation over a bill is real (point `bill` at one to try it); reading the
+  request/** branches and delivering the bulk answer PR back are deferred pending FCCN-ANTIBODY/judge
+  and a second live Atlas (OPEN-QUESTIONS.md #6). This action performs NO cross-repo write yet.
+
+inputs:
+  match-cmd:
+    description: >-
+      The judge: a command reading {need,candidate} JSON on stdin -> {verdict,reason}, the same seam
+      bin/match uses (FCCN-ANTIBODY/judge is the eventual implementation). Blank => the honest default
+      (needs-judgment), so a bill never auto-answers without a real judge.
+    required: false
+    default: ""
+  bill:
+    description: "Optional path to a single received bill (a needs-shaped list) to answer now, for testing the seam. Blank => scan request/** (empty by design until a peer files one)."
+    required: false
+    default: ""
+  piles:
+    description: "Path to this Atlas's pile registry (its own candidates)."
+    required: false
+    default: "_data/piles.yml"
+  tells:
+    description: "Path to this Atlas's tell registry."
+    required: false
+    default: "_data/tells.yml"
+  config:
+    description: "Path to the Jekyll config (read for the atlas url)."
+    required: false
+    default: "_config.yml"
+  pr-token:
+    description: "Token with Contents+PR write on the asking peer (for the deferred answer PR). Unused while scaffolded."
+    required: false
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    - name: Run the matcher over inbound bills (judge seam) and report the answer it would return
+      shell: bash
+      env:
+        ATLAS_MATCH_CMD: ${{ inputs.match-cmd }}
+        BILL: ${{ inputs.bill }}
+        ATLAS_PILES: ${{ inputs.piles }}
+        ATLAS_TELLS: ${{ inputs.tells }}
+        ATLAS_CONFIG: ${{ inputs.config }}
+      run: bash "$GITHUB_ACTION_PATH/run.sh"

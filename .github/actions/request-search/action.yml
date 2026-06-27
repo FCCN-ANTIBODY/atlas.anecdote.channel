@@ -1,0 +1,53 @@
+name: "Atlas request-search (bill emit) — scaffold"
+description: >
+  Asker side of the request->match->answer lifecycle: assemble this Atlas's BILL — the bounded
+  list of needs it currently wants found (a needs-shaped list, each carrying its constitution
+  pointer) — and file it with a friend Atlas as a signed, examine-not-merge request PR on a
+  `request/<scope>/<id>` branch over the friend's empty-on-main _data/requests.yml.
+
+  SCAFFOLD: the offline bill assembly (bin/bill) is real and runs here; the LIVE cross-repo emit
+  (push the request branch to the peer + open the PR) is deferred pending FCCN-ANTIBODY/judge and
+  a second live Atlas (CONTRACT.md -> "Requested search from a peer"; OPEN-QUESTIONS.md #6). This
+  action performs NO cross-repo write yet — it assembles the bill and reports what it would file.
+
+inputs:
+  peer:
+    description: "Friend Atlas repo to bill (owner/name). Required — you bill a DIFFERENT Atlas."
+    required: true
+  max:
+    description: "Block size: cap on how many needs this bill carries (asker-side curation is deferred, OPEN-QUESTIONS #7)."
+    required: false
+    default: "25"
+  needs:
+    description: "Path to this Atlas's needs registry."
+    required: false
+    default: "_data/needs.yml"
+  identity:
+    description: "Path in the calling repo to this Atlas's identity file."
+    required: false
+    default: "atlas.yml"
+  fingerprint:
+    description: "Path in the calling repo to the published signer fingerprint."
+    required: false
+    default: "keys/atlas.fpr"
+  pr-token:
+    description: "Token with Contents+PR write on the PEER (for the deferred live emit). Unused while scaffolded."
+    required: false
+    default: ""
+  signer-key:
+    description: "SSH private peer-signer key (for the deferred signed emit). Unused while scaffolded."
+    required: false
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    - name: Assemble the bill and report the request it would file
+      shell: bash
+      env:
+        PEER_REPO: ${{ inputs.peer }}
+        BILL_MAX: ${{ inputs.max }}
+        ATLAS_NEEDS: ${{ inputs.needs }}
+        ATLAS_YML: ${{ inputs.identity }}
+        ATLAS_FPR_FILE: ${{ inputs.fingerprint }}
+      run: bash "$GITHUB_ACTION_PATH/run.sh"
