@@ -1,0 +1,18 @@
+# Cloudflare Worker that fills a scan's state at the Atlas hub. A baked locator QR opens the
+# hub root (atlas.anecdote.channel/?node=<stem>); this Worker reads the edge geo Cloudflare
+# attaches to the request and 302s to <stem>.<state>.anecdote.channel. Deploy: wrangler deploy.
+#
+# Requires the Atlas domain to be proxied through Cloudflare (orange-cloud) so the route can
+# intercept (see DNS.md — flip the record to Proxied once the Pages cert is issued). Everything
+# but the hub root falls through to the GitHub Pages origin (and /piles/* is the other Worker's
+# concern). Set account_id via `CLOUDFLARE_ACCOUNT_ID` or `wrangler`.
+name = "atlas-scan-router"
+main = "worker.js"
+compatibility_date = "2026-06-01"
+
+# Intercept only the hub ROOT on the Atlas host — the path a locator QR opens. Routes match on
+# path and ignore the query string, so this catches /?node=... while leaving every other path
+# (assets, /tells/, /piles/*) on Pages.
+routes = [
+  { pattern = "atlas.anecdote.channel/", zone_name = "anecdote.channel" }
+]

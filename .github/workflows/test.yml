@@ -10,6 +10,7 @@ on:
       - "bin/match"
       - "bin/widget"
       - "assets/scan.js"
+      - "workers/scan-router/worker.js"
       - "_data/needs.yml"
       - "test/**"
       - ".github/workflows/test.yml"
