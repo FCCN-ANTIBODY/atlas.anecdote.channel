@@ -1,4 +1,4 @@
-name: Build & Deploy Atlas
+name: "Publish · site"
 
 on:
   # Shell/template/registry changes only. Data slices are fetched at runtime

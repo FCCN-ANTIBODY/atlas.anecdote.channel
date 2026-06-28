@@ -1,4 +1,4 @@
-name: register-peer
+name: "Federate · register peer"
 
 # Owner-initiated registration of THIS Atlas as a PEER of another Atlas directory. Opens a
 # consent PR on the peer adding this Atlas's entry to _data/atlases.yml, on an
