@@ -1,4 +1,4 @@
-name: test
+name: "Test · core"
 
 # Smoke-test the matchmaker (bin/match), the widget locator baker (bin/widget), and the
 # hub-fill scan router (assets/scan.js). The site templates are covered by the build job;

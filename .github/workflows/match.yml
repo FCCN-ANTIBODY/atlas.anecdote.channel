@@ -1,4 +1,4 @@
-name: match
+name: "Federate · match"
 
 # Run the matchmaker over the needs Atlas carries and publish matches.json. For each
 # need (_data/needs.yml), test candidate piles in the same scope for constitutional fit

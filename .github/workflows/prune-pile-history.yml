@@ -1,4 +1,4 @@
-name: Prune pile history
+name: "Maintain · prune pile history"
 
 # Housekeeping for the "retain + periodic prune" custody choice, as a TEMPLATE. Pile
 # branches are append-only signed-commit logs; left alone they grow forever. The whole
