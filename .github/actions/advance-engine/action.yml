@@ -21,13 +21,13 @@ runs:
   using: composite
   steps:
     - name: Record last-known-good atlas SHA
-      run: echo "ATLAS_LKG_SHA=$(git -C .atlas-enginerev-parse HEAD)" >> $GITHUB_ENV
+      run: echo "ATLAS_LKG_SHA=$(git -C .atlas-engine rev-parse HEAD)" >> $GITHUB_ENV
       shell: bash
 
     - name: Fetch latest atlas tip
       run: |
         git -C .atlas-enginefetch origin main
-        echo "ATLAS_LATEST_SHA=$(git -C .atlas-enginerev-parse FETCH_HEAD)" >> $GITHUB_ENV
+        echo "ATLAS_LATEST_SHA=$(git -C .atlas-engine rev-parse FETCH_HEAD)" >> $GITHUB_ENV
       shell: bash
 
     - name: Advance atlas to latest
