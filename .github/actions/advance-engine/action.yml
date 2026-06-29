@@ -26,7 +26,7 @@ runs:
 
     - name: Fetch latest atlas tip
       run: |
-        git -C .atlas-enginefetch origin main
+        git -C .atlas-engine fetch origin main
         echo "ATLAS_LATEST_SHA=$(git -C .atlas-engine rev-parse FETCH_HEAD)" >> $GITHUB_ENV
       shell: bash
 
