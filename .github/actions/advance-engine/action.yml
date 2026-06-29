@@ -31,7 +31,7 @@ runs:
       shell: bash
 
     - name: Advance atlas to latest
-      run: git -C .atlas-enginecheckout "$ATLAS_LATEST_SHA"
+      run: git -C .atlas-engine checkout "$ATLAS_LATEST_SHA"
       shell: bash
 
     - name: Setup Ruby
@@ -52,7 +52,7 @@ runs:
 
     - name: Revert atlas to last-known-good on build failure
       if: steps.build.outcome == 'failure'
-      run: git -C .atlas-enginecheckout "$ATLAS_LKG_SHA"
+      run: git -C .atlas-engine checkout "$ATLAS_LKG_SHA"
       shell: bash
 
     - name: Roll atlas pin forward (only on a clean latest build)
