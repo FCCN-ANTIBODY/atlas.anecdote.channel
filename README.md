@@ -18,7 +18,9 @@ reflects the coarse public maps the piles behind them place here. A pile is reac
 The why-shaped map is [`AGENTS.md`](AGENTS.md); the binding law is [`CONSTITUTION.md`](CONSTITUTION.md);
 the wire-level spec is [`CONTRACT.md`](CONTRACT.md); where this is going is [`ROADMAP.md`](ROADMAP.md).
 What's deferred for the whole constellation lives in one place, the workspace's
-[`OPEN-QUESTIONS.md`](https://github.com/FCCN-ANTIBODY/civic-node/blob/main/OPEN-QUESTIONS.md).
+[`OPEN-QUESTIONS.md`](https://github.com/FCCN-ANTIBODY/civic-node/blob/main/OPEN-QUESTIONS.md). The poll
+lifecycle walked end to end — where Atlas's directory + reporting role sits in it —
+is [`civic-node/docs/PIPELINE.md`](https://github.com/FCCN-ANTIBODY/civic-node/blob/main/docs/PIPELINE.md).
 
 ## Atlas's constitution
 
