@@ -69,21 +69,31 @@ merges them the way it merges everything — verify each, union the edges, surfa
 
 ## What's left to build (the road)
 
-Roughly in dependency order; all specced by the canon note, none started here:
+Roughly in dependency order; the first three are **built**:
 
-1. **The `above` field + tree hydration** *(the biggest active-behavior piece)* — a single subordinate mark
-   on the atlas↔atlas registration (up-pointing only), plus the build-time walk that emits the public
-   plain-text timestamped full tree. Design locked (see boundary-canon.md "The above mark"): **structure is
-   a POSITION not a value** — `above: <ref>` is the un-typo-able structural fact; an optional `as:` names
-   the edge for humans (verbatim, believed by nobody — "naming your friends-list entry"), evicted out of
-   the primary datum; genuinely non-structural custom text, if any, gets its own key the walker ignores.
-   The edge is **leased and dated** like a boundary claim, so the heartbeat/dereliction view falls straight
-   out of the renewal timestamps at every level.
-2. **The tell-side `anchor` field** — so real members graduate from `anchored: null` (the dump already
-   observes it; the Tell just needs to declare its center of mass in `tell.yml` / the compiled artifact).
-3. **The global bundle / atlas-of-atlases dump** — the apex as *the reference root most walks start from*
-   (not the registry): a signed, leased, catchable index of Atlases, served exactly like `boundaries.json`,
-   one floor up. This is what the client's "fetch the world" consumes.
+1. ~~**The `above` field + tree hydration**~~ *(the biggest active-behavior piece)* — **BUILT** (`bin/tree`,
+   `bin/tree.mjs`; `test/tree.test.mjs`). A single subordinate mark on the atlas↔atlas registration
+   (up-pointing only), plus the build-time walk that emits the public plain-text timestamped full tree.
+   Design locked (see boundary-canon.md "The above mark"): **structure is a POSITION not a value** —
+   `above: <ref>` is the un-typo-able structural fact; an optional `as:` names the edge for humans (verbatim,
+   believed by nobody — "naming your friends-list entry"), evicted out of the primary datum; genuinely
+   non-structural custom text, if any, gets its own key the walker ignores. The edge is **leased and dated**
+   like a boundary claim, so the heartbeat/dereliction view falls straight out of the renewal timestamps.
+2. ~~**The tell-side `anchor` field**~~ — **BUILT** (tell.anecdote.channel `bin/boundaries` `center:`; PR
+   merged). Real members graduate from `anchored: null`: a Tell declares its center of mass in `tell.yml`
+   and it is signed into the compiled artifact; the dump already observes it against the Atlas's own shape.
+3. ~~**The global bundle / atlas-of-atlases index**~~ — **BUILT** (`bin/atlas-index`, `bin/atlas-index.mjs`;
+   `test/atlas-index.test.mjs`). The apex as *the reference root most walks start from* (not the registry):
+   a signed, leased, catchable `atlases.json`, served exactly like `boundaries.json`, one floor up — it
+   hydrates the `_data/atlases.yml` peer directory (what `bin/register-atlas` populates) into the SET of
+   neighbor addresses the client's "fetch the world" walks to each peer's `boundaries.json`. Peers are
+   **relayed verbatim** (no ranking, no dedupe), the ledger is signed by this Atlas's dump signer (one
+   fingerprint for all it publishes), and freshness comes from an optional per-entry `renewed:` date (past
+   the window → `expired`; undated → listed with `stale: null`, honest, never dropped). **Two named seams
+   remain, small:** (a) `bin/register-atlas` should stamp/refresh `renewed:` on the peer entry so the lease
+   is self-maintaining (the PR-as-consent doubling as the renewal heartbeat, the tell-tier pattern one floor
+   up); (b) the client's `constituency.mjs` "fetch the world" reads `atlases[].url` — the index now *emits*
+   exactly that list; wiring the fetch loop is a thin follow-on when we return to the client.
 4. **Peer-dump relay** — when this Atlas holds a peer's ledger, decide what relays (claims always; met-record
    counts as hearsay-graded observations?) and keep it grade-labeled, never laundered into own observations.
 5. **Met-record counts in the ledger** — the dump surfacing `met: N` per binding (the artifact exists in
