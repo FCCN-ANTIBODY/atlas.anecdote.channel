@@ -72,9 +72,13 @@ merges them the way it merges everything — verify each, union the edges, surfa
 Roughly in dependency order; all specced by the canon note, none started here:
 
 1. **The `above` field + tree hydration** *(the biggest active-behavior piece)* — a single subordinate mark
-   on the atlas↔atlas registration (up-pointing only; custom affiliation text gets guaranteed carriage, not
-   findability), plus the build-time walk that emits the public plain-text timestamped full tree. The
-   heartbeat/dereliction view falls out of the timestamps.
+   on the atlas↔atlas registration (up-pointing only), plus the build-time walk that emits the public
+   plain-text timestamped full tree. Design locked (see boundary-canon.md "The above mark"): **structure is
+   a POSITION not a value** — `above: <ref>` is the un-typo-able structural fact; an optional `as:` names
+   the edge for humans (verbatim, believed by nobody — "naming your friends-list entry"), evicted out of
+   the primary datum; genuinely non-structural custom text, if any, gets its own key the walker ignores.
+   The edge is **leased and dated** like a boundary claim, so the heartbeat/dereliction view falls straight
+   out of the renewal timestamps at every level.
 2. **The tell-side `anchor` field** — so real members graduate from `anchored: null` (the dump already
    observes it; the Tell just needs to declare its center of mass in `tell.yml` / the compiled artifact).
 3. **The global bundle / atlas-of-atlases dump** — the apex as *the reference root most walks start from*
