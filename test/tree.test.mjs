@@ -1,0 +1,99 @@
+// Unit: the timestamped heartbeat tree. Signed up-pointing above-edges hydrate into a public plain-text +
+// JSON org tree with a last-refreshed stamp at every level. Holds the three locked rules: structure is a
+// POSITION not a value (only a verified anecdote.above/v1 `parent` is an edge; `as` never walks); the edge
+// is LEASED and DATED (stale = derelict, shown in place); disjoint branches reach OFF-MAP, additive not
+// broken. Run: node test/tree.test.mjs
+import { attest, verifyAbove, makeAbove, buildForest, renderText, renderJSON, loadOrCreateSigner, ABOVE } from "../bin/tree.mjs";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+
+let fails = 0;
+const ok = (c, m) => { if (!c) { console.error("FAIL: " + m); fails++; } else console.log("  ok: " + m); };
+const NOW = "2026-07-02T22:00:00.000Z";
+const dir = mkdtempSync(path.join(tmpdir(), "atlas-tree-"));
+let n = 0;
+const key = () => loadOrCreateSigner(path.join(dir, "k" + n++ + ".pk8"), { create: true });
+
+// a small church-ish world: a worldwide org that does nothing, two dioceses under it, parishes under those,
+// and a rowdy modernist parish pointing at a parent this atlas does NOT hold (off-map).
+const church = await key();     // top org — signs no edge of its own (does nothing; followers attach)
+const dioceseA = await key();
+const dioceseB = await key();
+const parish1 = await key();
+const parish2 = await key();
+const modernist = await key();
+const offmapOrg = await key();  // never resident here
+
+const mk = async (signer, child, parent, as, at) => (await makeAbove({ child, parent, as, at }, signer));
+const edges = [
+  await mk(dioceseA, "diocese-north", church.fingerprint, "diocese", "2026-06-30T00:00:00Z"),
+  await mk(dioceseB, "diocese-south", church.fingerprint, "diocese", "2026-01-01T00:00:00Z"), // STALE (>180d)
+  await mk(parish1, "st-anne", dioceseA.fingerprint, "parish", "2026-06-29T00:00:00Z"),
+  await mk(parish2, "st-mark", dioceseA.fingerprint, "parish", "2026-06-28T00:00:00Z"),
+  await mk(modernist, "new-light", offmapOrg.fingerprint, "we-say-so", "2026-06-30T00:00:00Z"),
+];
+const residents = [church.fingerprint, dioceseA.fingerprint, dioceseB.fingerprint, parish1.fingerprint, parish2.fingerprint, modernist.fingerprint];
+
+// 1. the edge: verifies, surfaces structural facts, and `as` is just a string.
+{
+  const v = await verifyAbove(edges[0]);
+  ok(v.ok && v.parent === church.fingerprint && v.child === "diocese-north" && v.as === "diocese", "an above-edge verifies and surfaces parent/child/as");
+  ok(v.by === dioceseA.fingerprint, "the node identity is the SIGNER fingerprint (up-pointing, signed by the one attaching itself)");
+  const bent = JSON.parse(JSON.stringify(edges[0])); bent.parent = church.fingerprint.replace(/.$/, "0");
+  ok(!(await verifyAbove(bent)).ok, "a bent parent reference fails the signature");
+}
+
+// 2. STRUCTURE IS A POSITION, NOT A VALUE — the walker only ever reads `parent` of a verified above-edge.
+{
+  // a non-above artifact that tries to LOOK structural: an `as` literally saying "above", a stray parent-ish key.
+  const impostor = await attest({ schema: "anecdote.note/v1", parent: dioceseA.fingerprint, as: "above", above: church.fingerprint }, parish1);
+  const v = await verifyAbove(impostor);
+  ok(!v.ok, "a non-above schema is NOT an edge, even if it carries a `parent`/`above`-looking field");
+  // and within a real edge, `as` is carried but never forms an edge
+  const f = buildForest([await mk(parish1, "st-anne", dioceseA.fingerprint, "above", NOW)], { residents, windowDays: 180, now: NOW });
+  const p = f.nodes.get(parish1.fingerprint);
+  ok(p.edge.parent === dioceseA.fingerprint && p.edge.as === "above", "`as` may even be the word 'above' — it is a name, carried, never walked into an edge");
+}
+
+// 3. the forest: the walk both directions, the top org as a root, the heartbeat stamp.
+{
+  const f = buildForest(edges, { residents, windowDays: 180, now: NOW });
+  const churchNode = f.roots.find((r) => r.key === church.fingerprint);
+  ok(churchNode && churchNode.children.length === 2, "the worldwide org that signs nothing is a ROOT with its dioceses under it (structure knits from below)");
+  const dioNorth = churchNode.children.find((c) => c.key === dioceseA.fingerprint);
+  ok(dioNorth && dioNorth.children.map((c) => c.label).sort().join(",") === "st-anne,st-mark", "down-the-chain: both parishes hydrate under diocese-north");
+  ok(dioNorth.edge.fresh === true && dioNorth.edge.as === "diocese", "a fresh edge carries its heartbeat ♥ and its human name");
+}
+
+// 4. THE HEARTBEAT — a stale edge is marked derelict and STILL SHOWN (never a silent disappearance).
+{
+  const f = buildForest(edges, { residents, windowDays: 180, now: NOW });
+  ok(f.stale === 1, "exactly one edge is stale past the 180d window");
+  const dioSouth = f.roots.find((r) => r.key === church.fingerprint).children.find((c) => c.key === dioceseB.fingerprint);
+  ok(dioSouth && dioSouth.edge.fresh === false, "diocese-south's lapsed edge is present but marked NOT fresh — dereliction visible in place");
+  ok(renderText(f).includes("✗ STALE"), "the plain-text tree shows the stale marker inline");
+}
+
+// 5. DISJOINT / OFF-MAP — a child whose declared parent this atlas doesn't hold reaches off, additive.
+{
+  const f = buildForest(edges, { residents, windowDays: 180, now: NOW });
+  const off = f.roots.find((r) => r.offMap);
+  ok(off && off.key === offmapOrg.fingerprint, "the unheld parent becomes an OFF-MAP placeholder root");
+  ok(off.children.length === 1 && off.children[0].label === "new-light", "the modernist parish hangs under it — the branch reaches off, not broken");
+  ok(renderText(f).includes("reaches off this atlas"), "the text says the branch reaches off");
+}
+
+// 6. renewal wins by date; both outputs render; JSON mirrors the text.
+{
+  const older = await mk(dioceseA, "diocese-north", church.fingerprint, "diocese", "2026-05-01T00:00:00Z");
+  const newer = await mk(dioceseA, "diocese-north-RENAMED", church.fingerprint, "archdiocese", "2026-06-30T00:00:00Z");
+  const f = buildForest([older, newer], { residents, windowDays: 365, now: NOW });
+  const dio = f.nodes.get(dioceseA.fingerprint);
+  ok(dio.label === "diocese-north-RENAMED" && dio.edge.as === "archdiocese", "the LATEST edge per signer wins (renewal is the lease heartbeat)");
+  const j = renderJSON(f);
+  ok(j.schema === "anecdote.atlas-tree/v1" && j.roots.length === f.roots.length && typeof renderText(f) === "string", "both plain-text and JSON render from the same forest");
+}
+
+if (fails) { console.error(`\n${fails} FAILED`); process.exit(1); }
+console.log("\nall tree tests passed");

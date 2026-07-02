@@ -85,4 +85,12 @@ else
   echo "[dump] SKIPPED — node not available"
 fi
 
+if command -v node >/dev/null 2>&1; then
+  echo "[tree] the heartbeat tree: signed above-edges hydrate into a timestamped org tree (text + JSON)"
+  node "$(cd "$(dirname "$0")/.." && pwd)/test/tree.test.mjs" || { echo "FAIL: tree test" >&2; exit 1; }
+  echo "  ok: bin/tree hydrates the above-marks with per-level heartbeat, off-map + stale shown in place"
+else
+  echo "[tree] SKIPPED — node not available"
+fi
+
 echo "ALL TESTS PASSED"
