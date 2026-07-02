@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# bin/atlas-index — exec shim; the logic lives in atlas-index.mjs (importable by test/atlas-index.test.mjs).
+exec node "$(cd "$(dirname "$0")" && pwd)/atlas-index.mjs" "$@"

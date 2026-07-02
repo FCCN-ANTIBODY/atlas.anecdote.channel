@@ -93,4 +93,12 @@ else
   echo "[tree] SKIPPED — node not available"
 fi
 
+if command -v node >/dev/null 2>&1; then
+  echo "[atlas-index] the atlas-of-atlases index: the peer directory hydrates into one signed, leased atlases.json"
+  node "$(cd "$(dirname "$0")/.." && pwd)/test/atlas-index.test.mjs" || { echo "FAIL: atlas-index test" >&2; exit 1; }
+  echo "  ok: bin/atlas-index relays peers verbatim, leases by renewed date, signs its own ledger"
+else
+  echo "[atlas-index] SKIPPED — node not available"
+fi
+
 echo "ALL TESTS PASSED"
