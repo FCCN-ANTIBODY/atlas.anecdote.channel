@@ -100,13 +100,56 @@ at declaration time) compiles authoring form → attested boundary object under 
 `tell.yml`'s per-boundary hash pins the compiled artifact. The dump ships the compiled form; the repo
 keeps the editable one.
 
+## Renewal: the listing is a lease, and the state positions smooth away
+
+The ladder above quietly wanted a pile of stored state (listed / delisted / pruned / derelict), and an
+Atlas operator *can* prune registrants — but **we can't make a Tell do anything**, so pruning is a
+judgment Atlas shouldn't be the one making. The smoothing move:
+
+> If joining is one threshold for disclosing boundaries, it is the kind of thing an Atlas can verify an
+> attestation about — and then require the assertion be **renewed**. If a Tell can't renew, the Atlas has
+> good reason not to list the binding anymore, **even if the Tell is still attached.**
+
+So a boundary listing is a **lease**, not a fact:
+
+- **Renewal is cheap and mechanical**: the Tell re-signs its assertion — the same boundary content hash,
+  a fresh date. Verifying the renewal is exactly the attestation an Atlas *can* check (a signature over
+  known bytes), requiring no judgment at all.
+- **"Listed" becomes a computed property, not a stored one**: *a fresh renewal exists.* The ledger is
+  append-only, dated, signed artifacts; DECLARED / MET / ENDORSED / CONTESTED / listed are all **views**
+  over it, recomputable by anyone from any copy. No state positions to add, dispute, or desync.
+- **The derelict Tell resolves itself.** Its claims quietly age out of the *current* canon while history
+  keeps them; nobody prunes, nobody is compelled, no authority declares dereliction. And an upstart,
+  non-derelict Tell claiming the same shape simply climbs MET while the stale binding decays —
+  **upstaging is emergent**, not adjudicated.
+- **Two orthogonal liveness axes, both decaying honestly**: *renewal proves the KEY is alive; met proves
+  the SERVICE is real.* A walked-away operator fails renewal. A zombie auto-renewer with no constituents
+  fails met. Neither failure needs anyone to say so.
+- **Walking away deliberately is the dent** (`docs/anti-signature.md`'s pile-ending): a signed withdrawal
+  is an *artifact* the ledger keeps in dented form; silent dereliction is an *absence* that decay handles.
+  Both endings are legible; neither requires Atlas's opinion.
+
+And the property the met-record made concrete (composer/met.mjs): **the operator's own location never
+appears in any artifact** — the token's signature, the body's placement, the binder's signature. A
+missing server owner was never the authority anything rests on; there is nothing resting on them to go
+missing from.
+
+## The hard boundary: the aggressive alternative
+
+A Tell may declare a boundary **hard**: joining requires the joiner to **do the proof themselves** — a
+met-record presented at the door (the same artifact Atlas counts as corroboration; one artifact, two
+consumers). A soft boundary admits anyone and lets presence merely *grade* participation; a hard one
+gates membership on demonstrated presence. Hard/soft is the **Tell's declaration** (a flag on the
+boundary entry, relayed verbatim like everything else) — Atlas never enforces it, but a hard-boundary
+Tell whose met-counts are zero is telling on itself in a way any judge can read.
+
 ## Open questions
 
-- **The met-record wire shape.** A presence-graduated scan of a Tell-minted token — which existing
-  artifact carries it? (A witness record whose claim mentions the token's `kid`? A poll answer with a
-  presence grade attached?) It should fall out of `presence.mjs` + `qr-mint`, not grow new crypto.
-- **Freshness windows.** How stale can a met-record be before a binding decays from MET back to
-  DECLARED? Likely the judge's dial, not the ledger's — the ledger just timestamps.
+- ~~**The met-record wire shape.**~~ Built: `composer/met.mjs` — the token verbatim (public material),
+  the binder's own presence claim, three signatures, zero secrets to re-verify, no new crypto.
+- **Renewal cadence.** How long a lease runs before a binding needs re-signing (and whether MET freshness
+  and renewal freshness share a clock or deliberately don't). Likely the judge's dial, not the ledger's —
+  the ledger just timestamps.
 - **Withdrawal and the dent.** A Tell un-claiming a boundary is a pile-ending-shaped act
   (`docs/anti-signature.md`): is a withdrawn claim *deleted* from the ledger (an absence) or *dented*
   (an artifact)? The ledger keeps the dented form, presumably.
