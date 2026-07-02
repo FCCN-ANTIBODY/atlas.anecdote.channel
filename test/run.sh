@@ -77,4 +77,12 @@ node --input-type=module -e '
 ' "$WRK" || fail "scan-router worker logic"
 ok "override/edge-geo/fallback state fill; DNS-guarded stem; 302 to <stem>.<state>"
 
+if command -v node >/dev/null 2>&1; then
+  echo "[dump] the atlas dump: lease-listed, center-bounded, watershed-shipped, ledger-signed"
+  node "$(cd "$(dirname "$0")/.." && pwd)/test/dump.test.mjs" || { echo "FAIL: dump test" >&2; exit 1; }
+  echo "  ok: bin/dump composes + signs the boundary canon"
+else
+  echo "[dump] SKIPPED — node not available"
+fi
+
 echo "ALL TESTS PASSED"

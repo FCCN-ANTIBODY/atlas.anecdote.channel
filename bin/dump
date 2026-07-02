@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# bin/dump — exec shim; the logic lives in dump.mjs (importable by test/dump.test.mjs).
+exec node "$(cd "$(dirname "$0")" && pwd)/dump.mjs" "$@"
