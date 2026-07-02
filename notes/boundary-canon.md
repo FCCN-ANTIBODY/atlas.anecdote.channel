@@ -274,9 +274,31 @@ trap: **there is no way to canonically model anything at all. Not a chance.** So
 structural term and lets the people do the modeling:
 
 - **`above`** — the atlas-to-atlas registration may carry a single subordinate mark: *this atlas files
-  itself under that one.* Up-pointing only. A **custom affiliation note is guaranteed carriage, not
-  findability**: it goes in verbatim (what this attachment means to us, in our words), but nothing
-  queries it — the queryable thing is the one mark.
+  itself under that one.* Up-pointing only. **Structure is a POSITION, not a value.** The structural
+  fact *is* the `above` field — its presence plus a parent reference is the edge. There is no
+  `relation: "above"` free-string to misspell into or out of structure, and no magic sentinel to forge:
+  you cannot *accidentally type* into a schema key, so the tree-walker trusts exactly one thing and it is
+  un-typo-able by construction. This is the whole guard against the custom-declaration risk (below).
+- **`as` — naming your friends-list entry.** A single optional human name for the edge — "diocese,"
+  "parent label," "the genre we split from" — carried **verbatim, believed by nobody, queried by nothing
+  for structure.** It is adornment on the edge, exactly like the `label` on a friend-list entry. It can
+  never be mistaken for structure because it lives in a different slot; the *type specifier is evicted
+  out of the primary datum*, which stays the bare, signed, up-pointing edge.
+
+  > **The custom-declaration risk, and why position beats value.** The temptation is to let the same
+  > channel carry free "custom declarations." Don't — if structure is a value someone types, structure is
+  > unreliable three ways: the tree-walker can't tell an edge from a note (so it ingests noise as
+  > hierarchy, or reintroduces an allowlist — the vocabulary trap we rejected); a reader must *decode from
+  > culture* to know why an edge exists (fine for a browsing human, fatal for a machine building the
+  > heartbeat tree); and vanity/squat edges render as real subordination. Position fixes all three: the
+  > edge is a key, the name is adornment, and anything that is genuinely *not* structure gets its own
+  > clearly-non-structural key (a `note`/`tags` slot the walker ignores) — never the `above` field. It is
+  > fine for people to tell us what a relationship means to them; it is not fine for that telling to be
+  > load-bearing.
+- **The edge is LEASED and DATED — this is the heartbeat.** An `above` mark is a signed assertion with a
+  fresh timestamp, re-signed to stay alive, exactly like a boundary claim's renewal. That timestamp *is*
+  what the heartbeat tree reads at every level: a stale edge shows its dereliction in place, no extra
+  machinery. (So the tree build rests directly on the lease we already have.)
 - **Peers are welcome to register** as they already do; but *structure* queries are the silly little
   DOM walk: step up to the parent, down to the children. From any node the whole chain hydrates — and
   the rich picture is emergent, not encoded: you can *see for yourself* that mixed kinds of peers all
