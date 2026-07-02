@@ -143,6 +143,71 @@ gates membership on demonstrated presence. Hard/soft is the **Tell's declaration
 boundary entry, relayed verbatim like everything else) — Atlas never enforces it, but a hard-boundary
 Tell whose met-counts are zero is telling on itself in a way any judge can read.
 
+## Same referent, different bytes — lineage, not disagreement
+
+Two Tells reporting "the same" boundary will almost certainly differ **byte-wise** at some point — and
+usually **without trying to disagree**. We post-processed our Colorado-4 shape, so it will never hash or
+sign the same as the source we took it from. Content hashes make this divergence *visible*; without more,
+they make it *illegible* — an observer can't tell honest lineage from a quiet contest.
+
+The fix is a relation on the declaration, signed like everything else:
+
+- **`derives`** — *"this shape comes from that one, on purpose."* Cites the source (its content hash /
+  fingerprint, and attribution), and indicates the processing. The honesty bar is deliberately reachable:
+  **we may not be able to assert totally *what* we did to it, but we can indicate that we did something
+  to it on purpose.** Same stance as `basis[]` — declared, not believed; the tag is provenance, the
+  weight is the judge's.
+
+With `derives`, two different-bytes shapes of the same referent read as a **family**, not a fight.
+
+## Disagreeing in the open — represented, never resolved
+
+The question worth hammering flat: **does the system represent disagreement at all, or is it entirely
+inferred by users?** The trap in "inferred": geometry comparison is exactly the class of judgment the
+system CANNOT make (below), so inferred disagreement is unreliable disagreement. The answer: the system
+represents **intent**, never verdicts —
+
+- **`disputes`** — *"my shape intentionally differs from that one."* The explicit trying-to-disagree bit,
+  citing the disputed boundary's hash and (optionally) grounds. Two Tells disagreeing in the open are two
+  signed `disputes` assertions anyone can read; CONTESTED in the ladder is now **computed from dispute
+  assertions**, not from overlap detection the system can't trust itself to do.
+
+Without `disputes`, post-processing divergence and deliberate contest are indistinguishable at the byte
+level. With it, silence has meaning too: different bytes + no `derives` + no `disputes` is its own honest
+signal — *unexplained divergence* — which a judge weighs accordingly.
+
+## The bad continents — no recourse, by design
+
+There are whole classes of problem here that nothing in the system can validate or repair: all the
+counties of Colorado fit together and leave fifteen square feet of open space in a corner of the state —
+the puzzle pieces don't meet, like bad continents. **There is no in-system recourse, and that is a design
+position, not a gap**: any machinery that could *force* a boundary to change would be the authority we
+have everywhere declined to create. Even if the whole network agrees someone's boundary ought to change,
+all anyone can *do* is let people jump from one Tell to another — which is mildly painful if you leave
+history behind, and gestures at a **Tell genealogy** we are deliberately not designing yet, because we
+don't know who the hell the authority would be.
+
+What the system CAN do is make the network's opinion cheap to express and cheap to adopt:
+
+## Hosting the boundary you wish they had
+
+The key active ingredient: if there is a network-agreed issue and they want it fixed, **Tells can start
+hosting the boundaries they wish other people had.**
+
+- **`proposes`** — a boundary published *for a referent the publisher does not claim*: "the shape I wish
+  you had," citing the current claim it would replace. It is not a claim (the proposer gathers no
+  met-records for it — it isn't their constituency); it is a signed, hosted, catchable artifact of the
+  network's opinion.
+- **Adoption closes the loop with no new machinery**: the claim-holder, persuaded, re-signs a proposal as
+  their own claim — `derives` citing the proposal. Convergence of many Tells' `proposes` on one shape is
+  exactly the emergent-authority signal the merged model already trusts; the fifteen square feet gets
+  fixed the day its owner adopts the shape the neighbors have been hosting, and not one minute before,
+  and nobody made them.
+
+This folds cleanly into the disagreement scenario — a `proposes` is a constructive `disputes`: same
+divergence, plus the shape you'd prefer. Three relations, one grammar: **derives** (family), **disputes**
+(contest), **proposes** (wish). All signed, all relayed verbatim by Atlas, all views over the same ledger.
+
 ## Open questions
 
 - ~~**The met-record wire shape.**~~ Built: `composer/met.mjs` — the token verbatim (public material),
@@ -155,6 +220,13 @@ Tell whose met-counts are zero is telling on itself in a way any judge can read.
   (an artifact)? The ledger keeps the dented form, presumably.
 - **Peer dumps.** When this Atlas holds a peer's ledger, do met-record counts relay (as hearsay-graded
   observations) or only the claims themselves?
+- **Tell genealogy.** Jumping Tells means leaving history behind; a successor relation (this Tell
+  continues that one) would ease it — parked deliberately until it's clear who, if anyone, could
+  authoritatively assert succession. (It may be nobody, and the answer may be the same grammar again:
+  a signed claim of succession, met-corroborated by the constituents who followed.)
+- **Proposal hygiene.** Can `proposes` be spammed (a thousand hostile wishes for someone's referent)?
+  Probably fine — proposals are cheap to ignore and carry their proposer's signature — but the dump
+  builder may want them in a separate section of the layout so the canon of CLAIMS stays legible.
 - **Small-N privacy.** Met-records are presence artifacts; publishing `met: 47` is fine, producing all
   47 on demand may identify bodies. The consent surface from the presence note applies to the Atlas's
   receipts too — likely: counts public, receipts disclosed only under the same rules a Tell's reports
