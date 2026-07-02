@@ -1,6 +1,6 @@
 // Unit: the Atlas dump — the canon as one signed artifact. The two calls it makes: `listed` from renewal
-// freshness (the lease; same-key rule), `bounded` from ONE point test of a member's DECLARED center of
-// mass against the Atlas's own shape. The call it refuses: polygon-vs-polygon containment — THE WATERSHED
+// freshness (the lease; same-key rule), `anchored` — an OBSERVATION, never a gate — from ONE point test
+// of a member's DECLARED anchor against the Atlas's own shape (membership is the declared filing). The call it refuses: polygon-vs-polygon containment — THE WATERSHED
 // RULE says every listed shape ships and bisects no matter where its center lives, and no rounding sliver
 // can exile a member. Run: node test/dump.test.mjs
 import { mkdtempSync, writeFileSync, mkdirSync, readFileSync, existsSync } from "node:fs";
@@ -87,10 +87,10 @@ async function scratchAtlas() {
   ok(dump.atlas === "testlas" && dump.boundary && dump.windowDays === 90, "the dump names its atlas, its own shape, and the window it applied");
 
   const by = (slug) => dump.members.find((m) => m.artifact.constituency === slug);
-  ok(by("county-a") && by("county-a").bounded === true, "a county with its declared center inside → bounded: true (one point test)");
-  ok(by("watershed-p") && by("watershed-p").bounded === false,
-     "THE WATERSHED: center of mass outside → bounded: false — but LISTED and SHIPPED all the same");
-  ok(by("district-nc") && by("district-nc").bounded === null, "no declared center → bounded: null, recorded honestly, still shipped");
+  ok(by("county-a") && by("county-a").anchored === true, "a county with its declared anchor inside → anchored: true (one point test, an observation)");
+  ok(by("watershed-p") && by("watershed-p").anchored === false,
+     "THE WATERSHED: anchor outside → anchored: false, a DESCRIPTION not a demerit — LISTED and SHIPPED all the same");
+  ok(by("district-nc") && by("district-nc").anchored === null, "no declared anchor → anchored: null, recorded honestly, still shipped");
 
   ok(!by("county-stale") && dump.expired.some((e) => e.id === ids.staleId && e.lastRenewal),
      "a stale lease drops from the listing — recorded in expired with its last renewal, never silently");
@@ -137,7 +137,7 @@ async function scratchAtlas() {
       const dv = await verifyAttestation(dump, {});
       ok(dv.ok, "the REAL client verifies the dump's signature (vendored core and composer agree)");
       const m = dump.members.find((x) => x.artifact.constituency === "colorado-4");
-      ok(!!m && m.bounded === null, "the real colorado-4 is LISTED off its real-key renewal (bounded null — no center declared yet)");
+      ok(!!m && m.anchored === null, "the real colorado-4 is LISTED off its real-key renewal (anchored null — no anchor declared yet)");
       const vb = await verifyBoundary(m.artifact);
       const placed = await bisect([-103.5, 39.5], [m.artifact]);
       ok(vb.ok && placed.length === 1 && placed[0].constituency === "colorado-4",

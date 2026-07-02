@@ -6,11 +6,14 @@
 //   listed  — computed from RENEWAL FRESHNESS (the lease; notes/boundary-canon.md "Renewal"). No renewal
 //             inside the window means not listed — recorded in `expired`, never silently dropped. A
 //             renewal only counts from the SAME key that signed the claim (no silent signer swap).
-//   bounded — is this member one of the sub-jurisdictions this Atlas's own boundary bounds? Decided by
-//             ONE point-in-polygon test of the member's DECLARED center of mass against the Atlas's own
-//             shape (_data/boundaries/self.json — e.g. Colorado's, attested by Colorado's Tell). Declared,
-//             never computed: polygon-vs-polygon containment is a TRAP — rounding math must never exile a
-//             county that sits a hair over a line. No declared center → bounded: null, recorded honestly.
+//   anchored — an OBSERVATION, never a gate: does the member's DECLARED anchor (its center of mass,
+//             "where you'd knock") sit inside this Atlas's own shape (_data/boundaries/self.json — e.g.
+//             Colorado's, attested by Colorado's Tell)? ONE point-in-polygon test of a declared point;
+//             declared, never computed — polygon-vs-polygon containment is a TRAP (rounding math must
+//             never exile a county sitting a hair over a line). MEMBERSHIP is not this: membership is the
+//             DECLARED FILING — a Tell's artifacts are in this Atlas's intake because it registered here,
+//             the consent gesture, full stop. anchored: false is a DESCRIPTION (normal for a watershed),
+//             not a demerit; no declared anchor → anchored: null, recorded honestly.
 //   (refused) — the call NOT made: geometry comparison of members against each other or against the self
 //             shape. THE WATERSHED RULE: every verified, listed shape SHIPS in the dump and is bisectable,
 //             no matter where its center of mass lives — a watershed that spills over any line we would
@@ -149,9 +152,9 @@ export async function buildDump(root, { windowDays = 90, now } = {}) {
       const sameKey = renewal && renewal.sig.by === artifact.sig.by;
       const fresh = sameKey && (new Date(at) - new Date(renewal.at)) <= windowDays * 86400_000;
       if (!fresh) { expired.push({ tell, id, slug: artifact.constituency, lastRenewal: sameKey ? renewal.at : null }); continue; }
-      // bounded: the member's DECLARED center of mass, one point test — or an honest null
-      const bounded = self && Array.isArray(artifact.center) ? contains(self.polygons, artifact.center) : null;
-      members.push({ tell, id, renewal, bounded, artifact });
+      // anchored: the member's DECLARED anchor, one point test — an observation, or an honest null
+      const anchored = self && Array.isArray(artifact.center) ? contains(self.polygons, artifact.center) : null;
+      members.push({ tell, id, renewal, anchored, artifact });
     }
   }
   members.sort((a, b) => (a.id < b.id ? -1 : 1));
@@ -162,7 +165,7 @@ export async function buildDump(root, { windowDays = 90, now } = {}) {
   const dump = await attest({
     schema: "anecdote.atlas-dump/v1",
     atlas: atlasId, at, windowDays,
-    boundary: selfId,                                    // the shape `bounded` was tested against
+    boundary: selfId,                                    // the shape `anchored` was observed against
     memberIds: members.map((m) => m.id),                 // the SET — what's in, in one glance
     members, proposals, expired, refused,
   }, signer);
