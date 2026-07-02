@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# bin/tree — exec shim; the logic lives in tree.mjs (importable by test/tree.test.mjs).
+exec node "$(cd "$(dirname "$0")" && pwd)/tree.mjs" "$@"
