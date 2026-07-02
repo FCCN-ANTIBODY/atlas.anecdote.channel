@@ -231,3 +231,90 @@ divergence, plus the shape you'd prefer. Three relations, one grammar: **derives
   47 on demand may identify bodies. The consent surface from the presence note applies to the Atlas's
   receipts too — likely: counts public, receipts disclosed only under the same rules a Tell's reports
   already follow (small-N suppression at the edge).
+
+## The punishment test — a named design instrument
+
+Every mechanism at this layer gets one question before it ships: **what happens to the one who
+doesn't?** If the answer is "nothing — they're quiet," the mechanism passes. Registration-as-consent
+passes. Renewal passes (a lapsed lease ages out; nobody is summoned). A compulsory global registry
+fails it instantly: the first non-registrant becomes a deviant, and **not registering must never be
+deviance — it is a mark of privacy. You're not doing anything socially wrong. You're just being.**
+
+## Discovery is a walk, not a registry
+
+The anxiety was one word: which atlases is every Tell *supposed* to know. "Supposed" imports an
+authority that exists nowhere else in the constellation. The declared form the system already speaks:
+**which atlases does this node know** — published, like everything else it publishes. A Tell's
+registrations are public gestures; an Atlas's peers live in `_data/atlases.yml`. Those edges form a
+**web of directories** — the friend list, one tier up — and discovery is walking that web from wherever
+you stand: the apex you installed from, a peer's peer, a dump a friend poured across a table. You keep
+what verifies; grades ride along (your roots vs. walked hearsay); the judge weighs provenance as always.
+
+The system promises **reachability from your roots — never completeness**. Completeness was never
+promised anywhere: authority emerges from convergence among *whoever showed up*.
+
+Plural atlases for one subject (several Colorado atlases — highly probable) are the same non-problem as
+plural boundary claims: same referent, different ledgers, merged by any client that holds both, contests
+surfaced, convergence computed. "**The** Colorado atlas" is a convention communities may converge on;
+the architecture permits it and refuses to enforce it.
+
+The apex, settled: its knowledge of the SAN list makes it **the reference root most walks start from**,
+not the registry — a courier of signed dumps it didn't sign (the firmware-offer lesson: courier ≠
+author). Registering there is "I'd like strangers who start from that root to find me": a consent
+gesture with a concrete, optional benefit, whose absence is just quiet. More roots arrive over the
+gravel, from friends, from rooms. Nothing anywhere counts the ones who stayed quiet. The non-temporary
+form of the apex is already sketched in this repo: the peer-Atlas registry, served exactly like
+`boundaries.json` — an **atlas-of-atlases dump**, same lease, same ledger discipline, one floor up.
+
+## The above mark — structure knits itself from below
+
+The affiliation vocabulary problem, inverted. Trying to give the registration PR a term-set that
+describes every conceivable localized hierarchy "in the blandest way possible" is the entity-system
+trap: **there is no way to canonically model anything at all. Not a chance.** So the schema carries one
+structural term and lets the people do the modeling:
+
+- **`above`** — the atlas-to-atlas registration may carry a single subordinate mark: *this atlas files
+  itself under that one.* Up-pointing only. A **custom affiliation note is guaranteed carriage, not
+  findability**: it goes in verbatim (what this attachment means to us, in our words), but nothing
+  queries it — the queryable thing is the one mark.
+- **Peers are welcome to register** as they already do; but *structure* queries are the silly little
+  DOM walk: step up to the parent, down to the children. From any node the whole chain hydrates — and
+  the rich picture is emergent, not encoded: you can *see for yourself* that mixed kinds of peers all
+  report to one ideological node, without any vocabulary having said so.
+- **Up-pointing is the right polarity.** A worldwide church does *nothing at all* and followers attach
+  themselves under it. The subordinate mark is the right people consenting — **a leader has no power if
+  there are no followers; the power of the follower is literally showing up for something else.** The
+  structure knits itself from below, by consent, which is the only authority this system recognizes
+  anywhere.
+- **The labeler stays orthogonal**: the label-reducer's vocabulary (the one set of labels in the
+  ecosystem) tags *subjects* — find-by-topic. `above` encodes *structure* — find-by-chain. A node can
+  have either, both, or neither.
+- **The walk is free at check time**: the chain hydration can run as part of an Atlas's build (and ride
+  the peer exchange alongside constitutions), so the structure picture costs nothing when someone comes
+  to look.
+- **Non-canon is normal.** A community may list itself obliquely, under several things, "not so pure as
+  the canonical channel" — or not at all, a private discussion group with no discoverability. The
+  punishment test holds: the unattached node loses only findability-by-chain, which is what it chose.
+
+## The dump-fetch is a location probe — fetch the world, find yourself locally
+
+Pulling "the Colorado list" is not sensitive-content private; it is a **location probe wielded
+constantly**, and half of a standing credential ("together with your signature, it says I was here when
+I did that"). The strongest countermeasure is already licensed by verify-from-anyone: **never ask a
+regional server a regional question.** The client pulls the *global bundle* (dumps are small; the apex's
+natural artifact), caches it in the shell, and bisects on-device. The fetch reveals membership in
+"people who use anecdote," nothing more; the gravel and friends cover even that.
+
+And the judge's grading hook is countable, not geometric: a presence claim already carries which
+boundary hash and which method; **ambiguity = how many shapes contain you, and whether competing
+proposals/disputes for the same referent disagree about containing you.** "Under the claim I'm inside;
+under the rival proposal I'm not" — the pinpointing grade, computed from artifacts, no slivers involved.
+
+## `bounded` → `anchored` (the demotion, recorded)
+
+The center of mass confessed: it was doing directory work, not geometry work, and membership's honest
+form is the **declared filing** — you are in an Atlas's intake because you registered there. The
+declared point survives as the **anchor** ("where you'd knock"), and the dump records
+`anchored: true/false/null` as an **observation, never a gate**: `false` is a *description* (normal for
+a watershed), `null` is honest absence. The anchor does more work talking about the exception than a
+membership rule ever did leaving the false of the rule ambiguous. Implemented in `bin/dump.mjs`.
