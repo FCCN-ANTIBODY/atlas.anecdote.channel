@@ -94,8 +94,14 @@ Roughly in dependency order; the first three are **built**:
    is self-maintaining (the PR-as-consent doubling as the renewal heartbeat, the tell-tier pattern one floor
    up); (b) the client's `constituency.mjs` "fetch the world" reads `atlases[].url` — the index now *emits*
    exactly that list; wiring the fetch loop is a thin follow-on when we return to the client.
-4. **Peer-dump relay** — when this Atlas holds a peer's ledger, decide what relays (claims always; met-record
-   counts as hearsay-graded observations?) and keep it grade-labeled, never laundered into own observations.
+4. **The structure trace** *(reframed from "peer-dump relay")* — see [`structure-trace.md`](structure-trace.md).
+   **Part 1 (the naming layer) is BUILT** (`bin/tree call`, `anecdote.calls/v1`, the parent cross-check in
+   `buildForest`): the authoritative name of a node is the one its **superior** assigns it, cross-checked so
+   only the child's actual parent may name it; the subordinate's self-moniker is demoted to adornment,
+   believed by nobody; the name is leased. **Part 2 (the roll-up) is NEXT, not built:** every atlas acquires
+   its immediate subordinates and folds them into the report it publishes upward — the shape assembles
+   bottom-up, one hop per level, cron-style, with **no central live-trace**; relayed subtrees stay
+   grade-labelled, never laundered into own observations (this is where "peer-dump relay" actually lives).
 5. **Met-record counts in the ledger** — the dump surfacing `met: N` per binding (the artifact exists in
    `anecdote.channel/composer/met.mjs`; the Atlas needs to intake and count them, receipts producible).
 6. **Registration-gesture extension** — carrying compiled boundary artifacts + renewals into
