@@ -3,7 +3,7 @@
 // POSITION not a value (only a verified anecdote.above/v1 `parent` is an edge; `as` never walks); the edge
 // is LEASED and DATED (stale = derelict, shown in place); disjoint branches reach OFF-MAP, additive not
 // broken. Run: node test/tree.test.mjs
-import { attest, verifyAbove, makeAbove, buildForest, renderText, renderJSON, loadOrCreateSigner, ABOVE } from "../bin/tree.mjs";
+import { attest, verifyAbove, makeAbove, makeCalls, verifyCalls, buildForest, renderText, renderJSON, loadOrCreateSigner, ABOVE, CALLS } from "../bin/tree.mjs";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -93,6 +93,41 @@ const residents = [church.fingerprint, dioceseA.fingerprint, dioceseB.fingerprin
   ok(dio.label === "diocese-north-RENAMED" && dio.edge.as === "archdiocese", "the LATEST edge per signer wins (renewal is the lease heartbeat)");
   const j = renderJSON(f);
   ok(j.schema === "anecdote.atlas-tree/v1" && j.roots.length === f.roots.length && typeof renderText(f) === "string", "both plain-text and JSON render from the same forest");
+}
+
+// 7. THE NAME FALLS FROM ABOVE — a superior's calls-record is the authoritative name, but ONLY when the
+// signer is the parent the child actually files under. Anyone else naming the child is garbage-grade.
+{
+  // the church names diocese-north "Archdiocese of the North"; the child's own moniker was "diocese-north".
+  const call = await makeCalls({ child: dioceseA.fingerprint, name: "Archdiocese of the North", at: NOW }, church);
+  const cv = await verifyCalls(call);
+  ok(cv.ok && cv.by === church.fingerprint && cv.child === dioceseA.fingerprint && cv.name === "Archdiocese of the North", "a calls-record verifies and surfaces signer/child/name");
+
+  const f = buildForest(edges, { residents, calls: [cv], windowDays: 180, now: NOW });
+  const dio = f.nodes.get(dioceseA.fingerprint);
+  ok(dio.name === "Archdiocese of the North" && dio.assigned && dio.assigned.by === church.fingerprint, "the child's actual parent names it — that name is authoritative (assigned from above)");
+  ok(dio.label === "diocese-north", "the subordinate's OWN moniker is still carried — as adornment, not the structural name");
+  ok(renderText(f).includes('Archdiocese of the North (aka "diocese-north")'), "the plain text leads with the superior's name, the moniker rides in parens");
+  const jn = renderJSON(f).roots.find((r) => r.key === church.fingerprint).children.find((c) => c.key === dioceseA.fingerprint);
+  ok(jn.name === "Archdiocese of the North" && jn.label === "diocese-north" && jn.assigned.fresh === true, "JSON carries authoritative name + moniker + the name's heartbeat");
+}
+
+// 8. an IMPOSTOR naming — a random atlas (not the parent) naming the child — is ignored, garbage-grade.
+{
+  const impostorName = await makeCalls({ child: dioceseA.fingerprint, name: "Definitely The Boss", at: NOW }, parish1);   // parish1 is NOT diocese-north's parent
+  const f = buildForest(edges, { residents, calls: [await verifyCalls(impostorName)], windowDays: 180, now: NOW });
+  const dio = f.nodes.get(dioceseA.fingerprint);
+  ok(dio.name === null && dio.assigned === null, "a calls-record from anyone but the actual parent names nobody — cross-check refuses it");
+  ok(f.unnamed >= 1 && renderText(f).includes(" *"), "an un-parent-named node is marked self-named (*) — a shape without a confirmed name");
+}
+
+// 9. the name is LEASED — a stale calls-record still names, but its dereliction shows in place.
+{
+  const stale = await makeCalls({ child: dioceseA.fingerprint, name: "Archdiocese (lapsed)", at: "2026-01-01T00:00:00Z" }, church);   // >180d before NOW
+  const f = buildForest(edges, { residents, calls: [await verifyCalls(stale)], windowDays: 180, now: NOW });
+  const dio = f.nodes.get(dioceseA.fingerprint);
+  ok(dio.name === "Archdiocese (lapsed)" && dio.assigned.fresh === false, "a lapsed name is still shown (never a silent rename) but marked not-fresh");
+  ok(renderText(f).includes("[name derelict]"), "the text shows the name going derelict in place");
 }
 
 if (fails) { console.error(`\n${fails} FAILED`); process.exit(1); }
