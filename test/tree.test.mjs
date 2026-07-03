@@ -3,8 +3,8 @@
 // POSITION not a value (only a verified anecdote.above/v1 `parent` is an edge; `as` never walks); the edge
 // is LEASED and DATED (stale = derelict, shown in place); disjoint branches reach OFF-MAP, additive not
 // broken. Run: node test/tree.test.mjs
-import { attest, verifyAbove, makeAbove, makeCalls, verifyCalls, buildForest, renderText, renderJSON, loadOrCreateSigner, ABOVE, CALLS } from "../bin/tree.mjs";
-import { mkdtempSync } from "node:fs";
+import { attest, verifyAbove, makeAbove, makeCalls, verifyCalls, buildForest, renderText, renderJSON, loadOrCreateSigner, signReport, verifyReport, readSubtrees, graftSubtrees, ABOVE, CALLS, TREE } from "../bin/tree.mjs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -128,6 +128,49 @@ const residents = [church.fingerprint, dioceseA.fingerprint, dioceseB.fingerprin
   const dio = f.nodes.get(dioceseA.fingerprint);
   ok(dio.name === "Archdiocese (lapsed)" && dio.assigned.fresh === false, "a lapsed name is still shown (never a silent rename) but marked not-fresh");
   ok(renderText(f).includes("[name derelict]"), "the text shows the name going derelict in place");
+}
+
+// 10. THE ROLL-UP — a superior holds a subordinate's SIGNED report, verifies it, and grafts the
+// subordinate's OWN subtree under the matching node: grade-labelled, carried, never laundered. No live-trace.
+{
+  const P = await key(), C = await key(), GC = await key();
+  // the child's world: a grandchild files under the child; the child signs its assembly.
+  const childForest = buildForest([await mk(GC, "grandchild", C.fingerprint, "team", NOW)], { residents: [C.fingerprint, GC.fingerprint], windowDays: 180, now: NOW });
+  const childReport = await signReport(childForest, C);
+  ok(childReport.schema === TREE && childReport.self === C.fingerprint && (await verifyReport(childReport)).ok, "an atlas signs its OWN assembly, and a superior can verify it");
+
+  // the superior's world: the child files under the superior; locally the child is a leaf.
+  const parent = buildForest([await mk(C, "child", P.fingerprint, "division", NOW)], { residents: [P.fingerprint, C.fingerprint], windowDays: 180, now: NOW });
+  ok(parent.nodes.get(C.fingerprint).children.length === 0, "before roll-up, the child is a leaf in the superior's local forest");
+
+  graftSubtrees(parent, [await verifyReport(childReport)], { windowDays: 180, now: NOW });
+  const cnode = parent.nodes.get(C.fingerprint);
+  ok(cnode.relay && cnode.relay.from === C.fingerprint && cnode.relay.verified === true && cnode.relay.fresh === true, "the child's node is grade-labelled: relayed from the child, verified, with its heartbeat");
+  ok(cnode.children.length === 1 && cnode.children[0].key === GC.fingerprint, "the child's OWN subtree (the grandchild) is grafted under it — one hop, bottom-up");
+  ok(parent.relayed === 1, "the roll-up counts one relayed subtree");
+
+  const j = renderJSON(parent);
+  const jc = j.roots.find((r) => r.key === P.fingerprint).children.find((c) => c.key === C.fingerprint);
+  ok(j.relayed === 1 && jc.relay && jc.relay.from === C.fingerprint && jc.children.some((g) => g.key === GC.fingerprint), "JSON carries the relay label + the grafted grandchild");
+  ok(renderText(parent).includes("relayed from " + C.fingerprint.replace(/^key:sha256:/, "").slice(0, 8)), "the plain text shows the relay marker in place");
+}
+
+// 11. the grade GATE — an unverifiable report grafts NOTHING; a stale-but-valid one is still shown, derelict.
+{
+  const P = await key(), C = await key(), GC = await key();
+  const good = await signReport(buildForest([await mk(GC, "gc", C.fingerprint, "team", NOW)], { residents: [C.fingerprint, GC.fingerprint], windowDays: 180, now: NOW }), C);
+
+  const bent = JSON.parse(JSON.stringify(good)); bent.at = "2000-01-01T00:00:00.000Z";   // tamper after signing
+  ok(!(await verifyReport(bent)).ok, "a tampered report fails verification");
+  const sdir = mkdtempSync(path.join(tmpdir(), "atlas-sub-"));
+  writeFileSync(path.join(sdir, "bent.json"), JSON.stringify(bent));
+  ok((await readSubtrees(sdir)).length === 0, "readSubtrees drops the unverifiable report — a relay is only ever one we verified came from that peer");
+
+  const parent = buildForest([await mk(C, "child", P.fingerprint, "div", NOW)], { residents: [P.fingerprint, C.fingerprint], windowDays: 180, now: NOW });
+  const stale = await signReport(buildForest([await mk(GC, "gc", C.fingerprint, "team", "2025-12-01T00:00:00Z")], { residents: [C.fingerprint, GC.fingerprint], windowDays: 999, now: "2025-12-01T00:00:00Z" }), C);
+  graftSubtrees(parent, [await verifyReport(stale)], { windowDays: 30, now: NOW });        // report is ~7mo old vs NOW
+  const cnode = parent.nodes.get(C.fingerprint);
+  ok(cnode.relay && cnode.relay.fresh === false && cnode.children.length === 1, "a stale relay is still grafted + shown, marked NOT fresh — dereliction visible in place, never a silent drop");
 }
 
 if (fails) { console.error(`\n${fails} FAILED`); process.exit(1); }

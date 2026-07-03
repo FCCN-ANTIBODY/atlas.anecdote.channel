@@ -19,7 +19,13 @@
 // of a node is the one its SUPERIOR assigns it (anecdote.calls/v1), cross-checked so only the child's actual
 // parent may name it. What a node calls itself (`child`/`as`) is a moniker — adornment, believed by nobody.
 //
-//   bin/tree build [--window-days N]   # hydrate the forest → tree.txt + tree.json (build products)
+// THE SHAPE ROLLS UP FROM BELOW. `build` also reads its immediate registrants' SIGNED reports from
+// _data/subtrees/, verifies each, and grafts each subordinate's own subtree under the matching node —
+// grade-labelled (relayed / from / verified / the subordinate's heartbeat), carried verbatim, never
+// laundered. It then SIGNS its own assembly, so its superior can hold + verify + relay it in turn. No
+// central live-trace: the full shape assembles one hop per level (notes/structure-trace.md).
+//
+//   bin/tree build [--window-days N]   # hydrate + roll up held subtrees → tree.txt + tree.json (SIGNED assembly)
 //   bin/tree mine --parent <fpr> [--as <name>]   # sign THIS atlas's own above-edge under a parent
 //   bin/tree call --child <fpr> --name <name>     # name a registrant this atlas is the superior of
 //   bin/tree fpr                       # the above-signer's public fingerprint
@@ -79,6 +85,7 @@ export async function loadOrCreateSigner(keyPath, { create = false } = {}) {
 
 export const ABOVE = "anecdote.above/v1";
 export const CALLS = "anecdote.calls/v1";
+export const TREE = "anecdote.atlas-tree/v1";   // this atlas's SIGNED assembly — held + verified + relayed by a superior
 
 // A signed, dated, up-pointing edge: "I (the signer) file myself under `parent`." `child` is a human slug
 // label carried inside the signed bytes; `parent` is the PARENT'S fingerprint (the ownership anchor). `as`
@@ -200,7 +207,7 @@ const displayName = (n) => n.name || n.label || (n.offMap ? `⤴ off-map ${short
 // superior's name leads; a differing self-moniker rides in parens (adornment); a node its parent hasn't
 // named is marked `*` — self-named only, a shape without a confirmed name.
 export function renderText(forest) {
-  const lines = [`# atlas heartbeat tree — ${forest.count} nodes, ${forest.edges} edges, ${forest.stale} stale, ${forest.unnamed} self-named (window ${forest.windowDays}d, as of ${forest.at})`];
+  const lines = [`# atlas heartbeat tree — ${forest.count} nodes, ${forest.edges} edges, ${forest.stale} stale, ${forest.unnamed} self-named, ${forest.relayed || 0} relayed (window ${forest.windowDays}d, as of ${forest.at})`];
   const seen = new Set();
   const walk = (n, depth) => {
     const indent = "  ".repeat(depth);
@@ -211,6 +218,8 @@ export function renderText(forest) {
     else if (n.offMap) line += "  (reaches off this atlas)";
     else line += "  (root)";
     if (n.assigned && !n.assigned.fresh) line += "  [name derelict]";
+    // a relayed subtree: carried from a subordinate's own report, verified, with ITS heartbeat — not laundered
+    if (n.relay) line += `  ⇒ relayed from ${shortKey(n.relay.from)} ${n.relay.fresh ? "♥" : "✗ STALE"} ${n.relay.at}${n.relay.verified ? " ✓" : ""}`;
     lines.push(line);
     if (seen.has(n.key)) { lines.push(`${indent}  … (cycle guard)`); return; }
     seen.add(n.key);
@@ -231,12 +240,73 @@ export function renderJSON(forest) {
              name: n.name || null,        // AUTHORITATIVE — the superior's assigned name (null if unnamed from above)
              label: n.label,              // the subordinate's OWN moniker — adornment, believed by nobody
              assigned: n.assigned ? { name: n.assigned.name, by: n.assigned.by, at: n.assigned.at, fresh: n.assigned.fresh } : null,
+             relay: n.relay ? { from: n.relay.from, at: n.relay.at, fresh: n.relay.fresh, verified: n.relay.verified, count: n.relay.count } : null,
              resident: n.resident, offMap: n.offMap || false,
              edge: n.edge ? { parent: n.edge.parent, as: n.edge.as, at: n.edge.at, fresh: n.edge.fresh } : null,
              children: n.children.map(node) };
   };
-  return { schema: "anecdote.atlas-tree/v1", at: forest.at, windowDays: forest.windowDays,
-           count: forest.count, edges: forest.edges, stale: forest.stale, unnamed: forest.unnamed, roots: forest.roots.map(node) };
+  return { schema: TREE, at: forest.at, windowDays: forest.windowDays,
+           count: forest.count, edges: forest.edges, stale: forest.stale, unnamed: forest.unnamed,
+           relayed: forest.relayed || 0, roots: forest.roots.map(node) };
+}
+
+// ---- THE ROLL-UP: bottom-up acquisition, no central live-trace ----------------------------------------
+// A superior does NOT walk the whole tree live. Each atlas signs its own assembly (signReport) and publishes
+// it; a superior HOLDS its immediate registrants' signed reports (_data/subtrees/), verifies them, and grafts
+// each subordinate's OWN subtree under the matching node — grade-labelled, carried, never laundered into its
+// own observations. Because each report already rolled up its children, the whole shape assembles one hop per
+// level. The relay carries the SUBORDINATE's heartbeat (its report's `at`), distinct from this atlas's stamp;
+// stacking many such observations over successive pulls is the log-histogram horizon (notes/structure-trace.md).
+
+// This atlas's assembly, signed: the rendered forest + who assembled it. A superior verifies this before it
+// grafts. `self` is the assembler's fingerprint; the signature is over the whole rolled-up shape.
+export async function signReport(forest, identity) {
+  return attest({ ...renderJSON(forest), self: identity.fingerprint }, identity);
+}
+export async function verifyReport(signed) {
+  if (!signed || signed.schema !== TREE) return { ok: false, errors: ["not an atlas-tree report"] };
+  const v = await verifyAttested(signed);
+  if (!v.ok) return { ok: false, errors: v.errors };
+  return { ok: true, by: v.by, at: signed.at, report: signed };
+}
+// Read held subordinate reports; verify each (the grade gate); keep the latest per signer. An unverifiable
+// report grafts nothing — a relay is only ever a report this atlas could actually verify came from that peer.
+export async function readSubtrees(dir) {
+  const out = new Map();
+  if (!existsSync(dir)) return [];
+  for (const f of readdirSync(dir).sort()) {
+    if (!f.endsWith(".json")) continue;
+    let rep; try { rep = JSON.parse(readFileSync(path.join(dir, f), "utf8")); } catch { continue; }
+    const v = await verifyReport(rep);
+    if (!v.ok) continue;
+    const prev = out.get(v.by);
+    if (!prev || new Date(v.at) > new Date(prev.at)) out.set(v.by, v);
+  }
+  return [...out.values()];
+}
+const findNode = (n, key) => { if (n.key === key) return n; for (const c of n.children || []) { const f = findNode(c, key); if (f) return f; } return null; };
+
+// Graft each verified subordinate report under this atlas's matching node. `subtrees` are verifyReport
+// results ({ by, at, report }). We only graft under a node we actually hold (the subordinate filed up to us);
+// we take the subordinate's OWN node from its report and hang its children here, grade-labelled with the
+// relay's provenance + the subordinate's heartbeat. Nested relays in the report ride along untouched — the
+// grade-labels stack one hop per level, so nothing a subordinate relayed is ever laundered as ours.
+export function graftSubtrees(forest, subtrees = [], { now, windowDays = 180 } = {}) {
+  const at = now ? new Date(now) : new Date();
+  let relayed = 0, staleRelays = 0;
+  for (const s of subtrees) {
+    const host = forest.nodes.get(s.by);                          // our local node for this subordinate
+    if (!host) continue;                                          // not a registrant we hold — nothing to graft under
+    const selfNode = (s.report.roots || []).map((r) => findNode(r, s.by)).find(Boolean);
+    const kids = selfNode ? (selfNode.children || []) : [];
+    const fresh = Number.isFinite(at - new Date(s.at)) && (at - new Date(s.at)) <= windowDays * 86400_000;
+    if (!fresh) staleRelays++;
+    host.relay = { from: s.by, at: s.at, fresh, verified: true, count: kids.length };
+    host.children = host.children.concat(kids);                  // the subordinate's own subtree, carried verbatim
+    relayed++;
+  }
+  forest.relayed = relayed; forest.staleRelays = staleRelays;
+  return forest;
 }
 
 // residents + labels from _data/atlases.yml (peers) + this atlas's own fpr.
@@ -255,14 +325,21 @@ async function main() {
   const mode = process.argv[2] || "build";
   const arg = (k) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : null; };
   if (mode === "build") {
-    const wd = arg("--window-days");
+    const wd = arg("--window-days"); const windowDays = wd ? +wd : 180;
     const edges = await readEdges(path.join(root, "_data/above"));
     const calls = await readCalls(path.join(root, "_data/calls"));
+    const subtrees = await readSubtrees(path.join(root, "_data/subtrees"));    // immediate registrants' held reports
     const { residents } = readResidents(root);
-    const forest = buildForest(edges, { residents, calls, windowDays: wd ? +wd : 180 });
+    const forest = buildForest(edges, { residents, calls, windowDays });
+    graftSubtrees(forest, subtrees, { windowDays });                            // the roll-up: graft verified subtrees, grade-labelled
+    // sign THIS atlas's assembly so a superior can hold + verify + relay it (one structural key, like mine/call)
+    const keyPath = process.env.ATLAS_ABOVE_KEY || path.join(root, "keys/above-signer.pk8");
+    const signer = await loadOrCreateSigner(keyPath, { create: true });
+    const signed = await signReport(forest, signer);
     writeFileSync(path.join(root, "tree.txt"), renderText(forest));
-    writeFileSync(path.join(root, "tree.json"), JSON.stringify(renderJSON(forest), null, 2) + "\n");
-    console.log(`tree: ${forest.count} nodes, ${forest.edges} edges, ${forest.stale} stale, ${forest.unnamed} self-named → tree.txt + tree.json`);
+    writeFileSync(path.join(root, "tree.json"), JSON.stringify(signed, null, 2) + "\n");
+    mkdirSync(path.join(root, "keys"), { recursive: true }); writeFileSync(path.join(root, "keys/above.fpr"), signer.fingerprint + "\n");
+    console.log(`tree: ${forest.count} nodes, ${forest.edges} edges, ${forest.stale} stale, ${forest.unnamed} self-named, ${forest.relayed} relayed → tree.txt + tree.json (signed ${signer.fingerprint})`);
   } else if (mode === "call") {
     const child = arg("--child"); const name = arg("--name");
     if (!child) { console.error("usage: bin/tree call --child <fpr> --name <name>   (name a registrant this atlas is the superior of)"); process.exit(2); }

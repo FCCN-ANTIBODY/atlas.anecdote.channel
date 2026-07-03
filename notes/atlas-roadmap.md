@@ -98,10 +98,12 @@ Roughly in dependency order; the first three are **built**:
    **Part 1 (the naming layer) is BUILT** (`bin/tree call`, `anecdote.calls/v1`, the parent cross-check in
    `buildForest`): the authoritative name of a node is the one its **superior** assigns it, cross-checked so
    only the child's actual parent may name it; the subordinate's self-moniker is demoted to adornment,
-   believed by nobody; the name is leased. **Part 2 (the roll-up) is NEXT, not built:** every atlas acquires
-   its immediate subordinates and folds them into the report it publishes upward — the shape assembles
-   bottom-up, one hop per level, cron-style, with **no central live-trace**; relayed subtrees stay
-   grade-labelled, never laundered into own observations (this is where "peer-dump relay" actually lives).
+   believed by nobody; the name is leased. **Part 2 (the roll-up) is BUILT** (`bin/tree build` reads
+   `_data/subtrees/`, `graftSubtrees`, `signReport`): every atlas holds its immediate registrants' SIGNED
+   reports, verifies each, and grafts each subordinate's own subtree under the matching node — the shape
+   assembles bottom-up, one hop per level, cron-style, with **no central live-trace**. Relayed subtrees stay
+   grade-labelled (`relay: from/at/fresh/verified/count`), carried, never laundered; the atlas signs only its
+   own assembly. Still ahead: accumulating each relay's heartbeat into the log-histogram horizon.
 5. **Met-record counts in the ledger** — the dump surfacing `met: N` per binding (the artifact exists in
    `anecdote.channel/composer/met.mjs`; the Atlas needs to intake and count them, receipts producible).
 6. **Registration-gesture extension** — carrying compiled boundary artifacts + renewals into
