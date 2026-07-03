@@ -102,3 +102,10 @@ else
 fi
 
 echo "ALL TESTS PASSED"
+
+echo "[custody] the declared boundary holds (keys/custody.yml x bin/check-custody)"
+bin/check-custody >/dev/null 2>&1 || fail "check-custody failed on the repo as-is"
+BW="$(mktemp -d)"; printf 'env:\n  X: ${{ secrets.SNEAKY }}\n' > "$BW/x.yml"
+WORKFLOWS_DIR="$BW" bin/check-custody >/dev/null 2>&1 && fail "checker passed an undeclared secret-read" || true
+rm -rf "$BW"
+ok "workflows read only declared secrets; an undeclared read fails the build"
