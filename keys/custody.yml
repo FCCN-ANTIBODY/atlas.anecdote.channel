@@ -1,0 +1,19 @@
+# DECLARED, BOUNDED CUSTODY (rework slice 5, civic-node#61; the posture is civic-node
+# docs/TENANCY.md → "The collapse"). Every secret a workflow in this repo may read is declared
+# here; every ssh signing namespace is declared here. bin/check-custody enforces both in CI —
+# an undeclared secret-read or namespace fails the build.
+
+secrets:
+  - name: ATLAS_SIGNER_KEY
+    kind: peer-signer (ssh-ed25519 private half; public fingerprint committed as keys/atlas.fpr)
+    minter: bin/atlas-bootstrap (operator)
+    holder: "repo secret, read only by register-peer.yml (materialized to a shredded temp file)"
+  - name: ATLAS_PR_TOKEN
+    kind: consent transport (write on the PEER Atlas being joined — the peer's grant, not ours)
+    minter: the peer Atlas operator
+    holder: "repo secret, read only by register-peer.yml (and the deferred bill emit)"
+
+namespaces: []
+# This repo's registration commits are signed via git's ssh signing (gpg.format=ssh), not
+# `ssh-keygen -Y` namespaces — no signing namespace is in use here; a first one must be
+# declared above before it will pass the checker.
