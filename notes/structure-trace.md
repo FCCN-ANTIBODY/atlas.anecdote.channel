@@ -38,7 +38,7 @@ named with `*` — self-named only, a shape without a confirmed name. The `calls
 dated** like everything: a superior that stops renewing a name shows it going derelict in place (`[name
 derelict]`), never a silent rename.
 
-## The shape rolls up from below (NEXT — not built)
+## The shape rolls up from below (BUILT — `bin/tree` build)
 
 The trace *sounds* like an active, central thing — a dispatcher reaching from the apex and firing a job at
 every node in the hierarchy to walk the whole tree live. **It must not be that.** Instead:
@@ -89,10 +89,15 @@ natural substrate for it: the way you'd eventually normalize an infrequent-but-p
 chatty one is by reading the shape of its buckets, not by demanding it beat often. Thresholds — "reliable,"
 "derelict" — stay the reader's dial, as everywhere; the histogram just stamps the facts to dial against.
 
-## Open threads for the build
+## How it landed (resolving the open threads)
 
-- **Intake location** — where a held subordinate report lives (a `_data/` sibling to `_data/above` /
-  `_data/calls`, e.g. `_data/subtrees/<peer>/`), populated by the acquisition pull.
-- **New bin or extension** — whether the roll-up is a new `bin/rollup` or an extension of `bin/tree build`.
-- **Grading — resolved above:** the relayed subtree's own heartbeat, carried and distinct, summarized as the
-  log-histogram horizon (recent list = its head bucket).
+- **Intake location — `_data/subtrees/`**: each immediate registrant's SIGNED report (`*.json`), verified on
+  read (`readSubtrees` → `verifyReport`). An unverifiable report grafts nothing.
+- **Extension, not a new bin** — `bin/tree build` now reads `_data/subtrees/`, grafts each verified
+  subordinate's own subtree under its matching node (`graftSubtrees`), and **signs its own assembly**
+  (`signReport`, `anecdote.atlas-tree/v1` + `self` + sig) so a superior can hold/verify/relay it in turn.
+- **Grade-labels stack, never launder** — a relayed node carries `relay: { from, at, fresh, verified,
+  count }`; nested relays in a child's report ride along untouched, so provenance stays one hop per level.
+- **Grading horizon — still ahead:** each relay carries the subordinate's single current heartbeat (`at` +
+  fresh). Accumulating these over successive pulls into the **log-histogram** (recent list = head bucket) is
+  the next layer — it consumes the observations this roll-up now produces; the histogram design is above.
