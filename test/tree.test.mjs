@@ -40,7 +40,10 @@ const residents = [church.fingerprint, dioceseA.fingerprint, dioceseB.fingerprin
   const v = await verifyAbove(edges[0]);
   ok(v.ok && v.parent === church.fingerprint && v.child === "diocese-north" && v.as === "diocese", "an above-edge verifies and surfaces parent/child/as");
   ok(v.by === dioceseA.fingerprint, "the node identity is the SIGNER fingerprint (up-pointing, signed by the one attaching itself)");
-  const bent = JSON.parse(JSON.stringify(edges[0])); bent.parent = church.fingerprint.replace(/.$/, "0");
+  // bend the last char to a GUARANTEED-different one — replacing with a fixed "0" is a no-op ~1/16 of the
+  // time (when the random fingerprint already ends in "0"), which made this assertion flaky.
+  const bent = JSON.parse(JSON.stringify(edges[0]));
+  bent.parent = church.fingerprint.slice(0, -1) + (church.fingerprint.endsWith("0") ? "1" : "0");
   ok(!(await verifyAbove(bent)).ok, "a bent parent reference fails the signature");
 }
 
