@@ -125,25 +125,32 @@ async function scratchAtlas() {
     process.env.ATLAS_DUMP_KEY = path.join(dir, "dump-test.pk8");
     const c4 = JSON.parse(readFileSync(path.join(tellRepo, "boundaries/compiled/colorado-4.json"), "utf8"));
     writeFileSync(path.join(bdir, "colorado-4.json"), JSON.stringify(c4));
-    // renew it with the REAL tell boundary key when it exists in this workspace (untracked but local)
+    const { verifyBoundary, bisect } = await import(path.join(sibling, "bisect.mjs"));
+    const { verifyAttestation } = await import(path.join(sibling, "sign.mjs"));
+
+    // Always: the REAL client verifies the COMMITTED artifact and bisects it — no key needed. This is the
+    // cross-repo agreement check (composer/bisect.mjs and our vendored core accept the very same bytes).
+    const vb = await verifyBoundary(c4);
+    const placed = await bisect([-103.5, 39.5], [c4]);
+    ok(vb.ok && placed.length === 1 && placed[0].constituency === "colorado-4",
+       "the REAL client verifies the committed colorado-4 and bisects the eastern plains into it");
+
+    // The LISTING leg needs a renewal from the artifact's OWN key. It runs only when this workspace holds a
+    // boundary key whose fingerprint matches the committed signer — a re-key leaves the old local key behind,
+    // so we skip honestly rather than sign a mismatched renewal the same-key rule would (correctly) reject.
     const tellKeyPath = path.join(tellRepo, "keys/boundary-signer.pk8");
-    if (existsSync(tellKeyPath)) {
-      const tellKey = await loadOrCreateSigner(tellKeyPath);
+    const tellKey = existsSync(tellKeyPath) ? await loadOrCreateSigner(tellKeyPath) : null;
+    if (tellKey && tellKey.fingerprint === c4.sig.by) {
       writeFileSync(path.join(bdir, "renewals/colorado-4.json"),
         JSON.stringify(await attest(renewal(await contentId(c4), "2026-07-01T00:00:00Z"), tellKey)));
       const { dump } = await buildDump(dir, { windowDays: 90, now: NOW });
-      const { verifyBoundary, bisect } = await import(path.join(sibling, "bisect.mjs"));
-      const { verifyAttestation } = await import(path.join(sibling, "sign.mjs"));
-      const dv = await verifyAttestation(dump, {});
-      ok(dv.ok, "the REAL client verifies the dump's signature (vendored core and composer agree)");
+      ok((await verifyAttestation(dump, {})).ok, "the REAL client verifies the dump's signature (vendored core and composer agree)");
       const m = dump.members.find((x) => x.artifact.constituency === "colorado-4");
-      ok(!!m && m.anchored === null, "the real colorado-4 is LISTED off its real-key renewal (anchored null — no anchor declared yet)");
-      const vb = await verifyBoundary(m.artifact);
-      const placed = await bisect([-103.5, 39.5], [m.artifact]);
-      ok(vb.ok && placed.length === 1 && placed[0].constituency === "colorado-4",
-         "a phone that fetched THIS dump verifies the member and bisects the eastern plains into colorado-4");
+      // colorado-4 DOES declare an anchor now; `anchored` is null here only because this dump holds no self
+      // shape to test the declared point against (buildDump: self && center ? contains : null).
+      ok(!!m && m.anchored === null, "the real colorado-4 is LISTED off its real-key renewal (anchored null — this dump holds no self shape to test the anchor against)");
     } else {
-      console.log("  ok: (real-renewal leg SKIPPED — no local tell boundary key)");
+      console.log("  ok: (list leg SKIPPED — no local tell key matching the committed signer" + (tellKey ? "; re-keyed" : "") + ")");
     }
   } else {
     console.log("  ok: (cross-repo leg SKIPPED — sibling checkouts not present)");
