@@ -60,7 +60,39 @@ This is the roll-up, and it is how "peer-dump relay" actually wants to work:
 - **Additive, one hop.** Holding two atlases' rolled-up reports gives more of the shape, never a
   contradiction — the same merge rule as everything else.
 
-Open threads for the build: where a held subordinate report lives in intake (`_data/` sibling to
-`_data/above` / `_data/calls`); whether the roll-up is a new `bin/rollup` or an extension of `bin/tree
-build`; and the freshness grading of a relayed subtree (its own heartbeat, carried, distinct from this
-atlas's).
+## Grading the heartbeat — the log-histogram horizon (DESIGN, for the roll-up)
+
+A relayed subtree carries **its own** heartbeat — the neighbor's beat, observed and carried, distinct from
+this atlas's own stamp and never laundered into it. But a single fresh/stale bit throws away the interesting
+part: *how* a neighbor beats over time. So instead of one bit, grade reliability as a **logarithmic-bucket
+histogram** over the refresh timestamps we've observed for that neighbor:
+
+- **Buckets coarsen geometrically going back** — the last few beats fine-grained (minutes/hours), then days,
+  then weeks, then months, each bucket roughly a power wider than the last. That buys a **long horizon for
+  cheap**: a bounded number of buckets covers an unbounded span, so we keep a real history without keeping
+  unbounded history.
+- **The recent list is just the head bucket.** Expose both from the one structure — the freshest beats as a
+  plain list, the deep past as counts — so a reader gets "what did it do lately" and "what has it done all
+  along" without two mechanisms.
+- **Effective reliability falls out.** A neighbor that beat steadily across every bucket reads differently
+  from one that only lit up recently, or one whose old buckets are full and recent ones empty (going
+  derelict) — and you see it at a glance, per level, right in the tree.
+
+The point the histogram is really for: **stepping back a scale.** Near-term jitter that looks like
+irregularity often **smooths to nothing special** once you zoom out a bucket — the log grid *is* the zoom
+control, letting a reader see whether a node's wobble is real unreliability or just fine-grained noise that
+resolves into a steady shape at a coarser grain. That "look at it from farther back" dimension is the gift.
+
+Deliberately **not phase-regularity detection** yet — the histogram stamps, it does not judge a rhythm. But
+since every node runs on **cron by default**, its phase *is* detectable later, and these log-buckets are the
+natural substrate for it: the way you'd eventually normalize an infrequent-but-punctual server against a
+chatty one is by reading the shape of its buckets, not by demanding it beat often. Thresholds — "reliable,"
+"derelict" — stay the reader's dial, as everywhere; the histogram just stamps the facts to dial against.
+
+## Open threads for the build
+
+- **Intake location** — where a held subordinate report lives (a `_data/` sibling to `_data/above` /
+  `_data/calls`, e.g. `_data/subtrees/<peer>/`), populated by the acquisition pull.
+- **New bin or extension** — whether the roll-up is a new `bin/rollup` or an extension of `bin/tree build`.
+- **Grading — resolved above:** the relayed subtree's own heartbeat, carried and distinct, summarized as the
+  log-histogram horizon (recent list = its head bucket).
