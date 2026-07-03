@@ -78,7 +78,15 @@ manifest; the reflecting happens in the browser at runtime.
 | `assets/atlas.js` | Runtime client: fetch each Atlas-hosted map → parse XML → render slice + freshness |
 | `piles/<id>/` | Committed seed map (`map.xml` + `map.xsl`) served until the gateway places live data |
 | `_layouts/`, `index.md`, `assets/atlas.css` | The shell |
+| `_data/atlases.yml` | Registry of **peer Atlases** this one has accepted (the reciprocal deal — see `CONTRACT.md`) |
+| `_data/needs.yml` · `needs.json` · `needs.md` | The **needs board**: searches deposited here, machine and human form |
+| `_data/requests.yml` · `matches.json` | Bills in (empty on `main` by design) / the matcher's published answers |
+| `bin/register-atlas`, `bin/atlas-bootstrap`, `bin/publish-signer` | Directory tooling: peer registration and signer bootstrap |
+| `bin/match`, `bin/bill`, `bin/atlas-index`, `bin/tree`, `bin/dump` | Matchmaking & structure tooling (see below) |
+| `workers/piles-gateway` | Cloudflare Worker serving `/piles/*` from each pile's branch — needs **no repo token** |
+| `workers/scan-router` | Geo 302 for locator QRs — **built, not yet on a route** (its README: "the only step left to make scans resolve live") |
 | `.github/workflows/deploy.yml` | Build + deploy, triggered by push / manual only |
+| `.github/workflows/match.yml` · `register-peer.yml` · `prune-pile-history.yml` · `test.yml` | Hourly matchmaker · peer-registration PR opener · feed rotation · CI |
 
 ## Register a Tell
 
@@ -119,6 +127,34 @@ Commit a seed map at that path so the slice renders before first placement. The 
 fetches the Atlas-hosted `map` path same-origin; the consenting pile keeps it fresh by placing
 data there out-of-band (see [`CONTRACT.md`](CONTRACT.md) → Gateway placement). Adding or removing
 a pile rebuilds the shell once; ongoing **data** updates need no rebuild.
+
+## Matchmaking & peering
+
+Atlas also **matches**: needs deposited on the board (`_data/needs.yml`) are run against the piles and
+Tells it lists by `bin/match` (hourly via `match.yml`; honest by default — no `ATLAS_MATCH_CMD`, no
+matches), publishing accepted matches at `/matches.json` for the asker to **pull**. A cross-Atlas ask
+travels as a **bill** — a bounded, needs-shaped list on a `request/<scope>/<id>` branch (`bin/bill`;
+the live cross-repo emit/answer is deferred). Peering itself is the registration gesture one tier up:
+`bin/register-atlas` opens a signed PR onto a peer's `_data/atlases.yml`, and by getting listed you
+give — a peer may trigger your matcher as you may theirs. The wire spec is
+[`CONTRACT.md`](CONTRACT.md) → "Requested search from a peer"; the phases are
+[`ROADMAP.md`](ROADMAP.md); the human board is [`/needs`](needs.md). The Atlas's own life, state by
+state — including which of these parts are scaffolds — is [`docs/lifecycle.md`](docs/lifecycle.md).
+
+## Shaping notes
+
+[`notes/`](notes/) is **pre-law shaping — it binds nothing**: `CONSTITUTION.md` remains the whole law,
+and new conduct is written there first, before it happens. What lives in the notes, by their own
+status lines:
+
+- [`notes/atlas-roadmap.md`](notes/atlas-roadmap.md) — the passive/active symmetry, the `above` mark,
+  tree hydration, the atlas-of-atlases index (`bin/atlas-index`, `bin/tree` — partially built).
+- [`notes/boundary-canon.md`](notes/boundary-canon.md) — the declared/met/endorsed/contested ladder,
+  met-records, leases, the punishment test.
+- [`notes/structure-trace.md`](notes/structure-trace.md) — names fall from above, shape rolls up from
+  below; the heartbeat horizon.
+- [`notes/public-exposure.md`](notes/public-exposure.md) — raw idea capture: the public jurisdiction
+  page, the ternary, establishment-tier Tells.
 
 ## Develop
 
