@@ -1,0 +1,92 @@
+name: "Atlas drop"
+description: >-
+  Run the ballot drop door (bin/drop) over an inbox of hand-carried ballots: verify from
+  anyone, dedup by content-id, and route each into turn-in / quell-back / flood-onward,
+  keeping every kept ballot content-addressed under the archive and writing a drops.json
+  fate manifest. FORWARD-FIRST ONLY — this never judges a ballot's genuineness and never
+  provisions custody (a stand-in pile is a later, judged slice). Commits the manifest and
+  the archive when they change.
+
+  Like the match action, this is the reusable form of atlas's own bin/drop: a workspace that
+  mounts atlas at atlas/ can `uses: ./atlas/.github/actions/drop` to run the same door over
+  its OWN registries. Needs contents:write on the calling repo (the built-in GITHUB_TOKEN).
+
+inputs:
+  inbox:
+    description: "Inbox JSON — { ballots:[...], quells?:[...] } or a bare [ ...ballots ]."
+    required: false
+    default: "_data/drop-inbox.json"
+  quells:
+    description: "Signed-quell JSON array (optional; the quell-back shrug is dormant without it)."
+    required: false
+    default: "_data/quells.json"
+  poll-authors:
+    description: "Map <pile>/<poll> -> author fingerprint, for terminal author quells (optional)."
+    required: false
+    default: "_data/poll-authors.json"
+  piles:
+    description: "Path to the pile registry."
+    required: false
+    default: "_data/piles.yml"
+  tells:
+    description: "Path to the tell directory."
+    required: false
+    default: "_data/tells.yml"
+  atlases:
+    description: "Path to the peer-Atlas registry (the one-hop flood targets)."
+    required: false
+    default: "_data/atlases.yml"
+  output:
+    description: "Path the fate manifest is written to."
+    required: false
+    default: "drops.json"
+  archive:
+    description: "Directory the content-addressed keep is written under."
+    required: false
+    default: "_data/drop-archive"
+  publish:
+    description: "Commit + push the manifest and archive when they change."
+    required: false
+    default: "true"
+  git-user-name:
+    description: "Commit author name used when publishing."
+    required: false
+    default: "atlas-drop"
+  git-user-email:
+    description: "Commit author email used when publishing."
+    required: false
+    default: "atlas-drop@users.noreply.github.com"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Run the drop door
+      shell: bash
+      # The logic is the committed bin/drop (node stdlib, no deps); this points it at the caller's data.
+      env:
+        ATLAS_DROP_IN: ${{ inputs.inbox }}
+        ATLAS_QUELLS: ${{ inputs.quells }}
+        ATLAS_POLL_AUTHORS: ${{ inputs.poll-authors }}
+        ATLAS_PILES: ${{ inputs.piles }}
+        ATLAS_TELLS: ${{ inputs.tells }}
+        ATLAS_ATLASES: ${{ inputs.atlases }}
+        ATLAS_DROP_OUT: ${{ inputs.output }}
+        ATLAS_ARCHIVE: ${{ inputs.archive }}
+      run: "$GITHUB_ACTION_PATH/../../../bin/drop"
+
+    - name: Publish drops if they changed
+      if: ${{ inputs.publish == 'true' }}
+      shell: bash
+      env:
+        OUTPUT: ${{ inputs.output }}
+        ARCHIVE: ${{ inputs.archive }}
+        GIT_USER_NAME: ${{ inputs.git-user-name }}
+        GIT_USER_EMAIL: ${{ inputs.git-user-email }}
+      run: |
+        set -euo pipefail
+        git add "$OUTPUT" "$ARCHIVE" 2>/dev/null || true
+        if git diff --cached --quiet; then echo "no drop changes"; exit 0; fi
+        git config user.name  "$GIT_USER_NAME"
+        git config user.email "$GIT_USER_EMAIL"
+        git commit -m "drop: archive received ballots + refresh the fate manifest"
+        git push
