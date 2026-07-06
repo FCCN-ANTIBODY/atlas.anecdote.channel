@@ -109,6 +109,14 @@ else
   echo "[drop] SKIPPED — node not available"
 fi
 
+if command -v node >/dev/null 2>&1; then
+  echo "[custody-plan] the stand-in custody decision: honest-off, mass/scope-fit rises, archive-only degrade"
+  node "$(cd "$(dirname "$0")/.." && pwd)/test/custody.test.mjs" || { echo "FAIL: custody test" >&2; exit 1; }
+  echo "  ok: bin/custody plans (never provisions); nothing rises by default; a judge is required"
+else
+  echo "[custody-plan] SKIPPED — node not available"
+fi
+
 echo "ALL TESTS PASSED"
 
 echo "[custody] the declared boundary holds (keys/custody.yml x bin/check-custody)"
