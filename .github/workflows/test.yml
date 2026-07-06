@@ -11,6 +11,8 @@ on:
       - "bin/widget"
       - "bin/drop"
       - "bin/drop.mjs"
+      - "bin/custody"
+      - "bin/custody.mjs"
       - "assets/scan.js"
       - "workers/scan-router/worker.js"
       - "_data/needs.yml"
