@@ -9,6 +9,8 @@ on:
     paths:
       - "bin/match"
       - "bin/widget"
+      - "bin/drop"
+      - "bin/drop.mjs"
       - "assets/scan.js"
       - "workers/scan-router/worker.js"
       - "_data/needs.yml"

@@ -1,0 +1,19 @@
+name: "Atlas · drop door"
+
+# Run the ballot drop door over _data/drop-inbox.json: verify from anyone, dedup, route
+# (turn-in / quell-back / flood-onward), archive content-addressed, refresh drops.json.
+# Manual for now — automated triggers (an inbox commit, or a scheduled sweep) are a later
+# slice, kept out until the receive path that fills the inbox exists.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  drop:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/drop
