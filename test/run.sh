@@ -101,6 +101,14 @@ else
   echo "[atlas-index] SKIPPED — node not available"
 fi
 
+if command -v node >/dev/null 2>&1; then
+  echo "[drop] the ballot drop door: verify-from-anyone, content-id dedup, the three-rule table"
+  node "$(cd "$(dirname "$0")/.." && pwd)/test/drop.test.mjs" || { echo "FAIL: drop test" >&2; exit 1; }
+  echo "  ok: bin/drop verifies + dedups + routes (turn-in / quell-back / flood-onward), kept content-addressed"
+else
+  echo "[drop] SKIPPED — node not available"
+fi
+
 echo "ALL TESTS PASSED"
 
 echo "[custody] the declared boundary holds (keys/custody.yml x bin/check-custody)"
