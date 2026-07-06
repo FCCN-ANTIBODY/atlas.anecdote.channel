@@ -68,6 +68,21 @@ copy is a memory of me, not me.*
   what I would serve, so a carried copy can prove what I said and when — never a freshness I did not
   stamp. The snapshot export and its verification are not yet built; I attest them here, in plain
   words, before I run them.
+- **I accept hand-carried ballots at one signed door, and I judge none of them.** A ballot that
+  reaches me in person — carried, not posted — I take on the strength of its own signature
+  (verify-from-anyone; who turns it in is provenance, never authority), and I witness only that it
+  arrived. I never rule on whether it is genuine — that reading belongs to an intelligent being
+  downstream, under a pile's own constitution, not to me. What I cannot home I do not drop: I forward
+  it one hop to the peer Atlases I list, and I keep it content-addressed, so the same ballot carried
+  by many hands converges to one. A ballot for a poll whose door is quelled or whose close date has
+  passed I do not ingest — I hand its quell back to the carrier, who prunes and spreads it. Only when
+  no live door is known and ballots for one poll accumulate may I stand up a **stand-in ballot-box
+  pile** for it — as its attested provisioner, addressed to the poll's own owner, **holding no key
+  that opens it**: I sign what I deliver, I never decrypt it. Such a pile is reversible (a fresher,
+  truly-signed listing supersedes it) and adoptable by the owner when reached, and I stand one up
+  never by my own hand alone — only on a consent gesture or a judge I have named. This is the one
+  place I touch a pile's making, and it narrows *"I do not register data-piles directly"* by exactly
+  this much and no more. None of this is yet built; I attest it here, in plain words, before I run it.
 - I publish coarse standing, never raw per-respondent counts.
 - Any terms a pile places with its data ride with it through me. I honor them, I do not strip them,
   and I release nothing a pile's own terms forbid. I do not split a pile into its constituents
