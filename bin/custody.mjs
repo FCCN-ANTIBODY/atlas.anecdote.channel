@@ -48,7 +48,8 @@ function readJson(p, fallback) { return existsSync(p) ? JSON.parse(readFileSync(
 function envList(v) { return (v || "").split(",").map((s) => s.trim()).filter(Boolean); }
 
 // walk the content-addressed archive: <archive>/<scope>/<poll>/<id>.json -> the kept ballot objects.
-function readArchive(dir) {
+// (exported: bin/hearsay.mjs and bin/tee.mjs read the same keep.)
+export function readArchive(dir) {
   const out = [];
   if (!existsSync(dir)) return out;
   for (const scope of readdirSync(dir, { withFileTypes: true })) {

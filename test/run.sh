@@ -23,6 +23,27 @@ jq -e '.[0] | .need_id and .asker_repo and .candidate.atlas_url and .candidate.t
 jq -e '.[0].consent_required == true' matches.json >/dev/null || fail "consent_required not derived from terms"
 ok "match carries atlas+tell+pile address; consent_required follows the need's terms"
 
+echo "[2b] the mixed model: a hearsay pile the Atlas keeps is matchable, marked self-kept"
+HY="$(mktemp -d)"; cat > "$HY/hearsay.yml" <<'YAML'
+- id: orphan-hearsay
+  pile: "orphan"
+  poll: "budget"
+  scope: "colorado"
+  repo_url: "https://github.com/acme/orphan-hearsay"
+  age_recipient: "age1lggyhqrw2nlhcxprm67z43rta597azn8gknawjehu9d9dl0jq3yqqvfafg"
+  provisioner: "self:atlas"
+  status: live
+YAML
+ATLAS_HEARSAY="$HY/hearsay.yml" ATLAS_MATCH_CMD="$W/yes" bin/match >/dev/null
+jq -e '[.[]|select(.candidate.pile_id=="orphan-hearsay")]|length == 1' matches.json >/dev/null \
+  || fail "hearsay pile did not surface as a candidate"
+jq -e '.[]|select(.candidate.pile_id=="orphan-hearsay")|.candidate.provisioner=="self" and (.candidate.tell_url|length>0)' matches.json >/dev/null \
+  || fail "hearsay candidate not marked self-kept / not addressed through the Atlas"
+# and the honest default still holds for the union: no judge, no match.
+ATLAS_HEARSAY="$HY/hearsay.yml" bin/match >/dev/null
+[ "$(jq 'length' matches.json)" = 0 ] || fail "a hearsay candidate auto-matched without a judge"
+ok "shadow questions are found when searched (provisioner:self rides); still nothing without a judge"
+
 echo "[3] registry + manifest parse"
 ruby -ryaml -e 'YAML.load_file("_data/needs.yml")' || fail "_data/needs.yml not valid YAML"
 ok "_data/needs.yml parses"
@@ -115,6 +136,22 @@ if command -v node >/dev/null 2>&1; then
   echo "  ok: bin/custody plans (never provisions); nothing rises by default; a judge is required"
 else
   echo "[custody-plan] SKIPPED — node not available"
+fi
+
+if command -v node >/dev/null 2>&1; then
+  echo "[hearsay] the Atlas-owned hearsay pile: archiveOnly rises to a keep plan; the keyring is public halves only"
+  node "$(cd "$(dirname "$0")/.." && pwd)/test/hearsay.test.mjs" || { echo "FAIL: hearsay test" >&2; exit 1; }
+  echo "  ok: bin/hearsay plans (needs a judge) + records recipients only, idempotent, never rewritten"
+else
+  echo "[hearsay] SKIPPED — node not available"
+fi
+
+if command -v node >/dev/null 2>&1; then
+  echo "[tee] the archivist tee: every listed antidote gets everything, ledgered, delta-only on re-run"
+  node "$(cd "$(dirname "$0")/.." && pwd)/test/tee.test.mjs" || { echo "FAIL: tee test" >&2; exit 1; }
+  echo "  ok: bin/tee loops the antidote registry, loose-mail bundles + hash-linked open ledger, honest-off when empty"
+else
+  echo "[tee] SKIPPED — node not available"
 fi
 
 echo "ALL TESTS PASSED"
