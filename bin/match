@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
-# The matchmaker. For each need Atlas carries (_data/needs.yml), find candidate piles it
-# indexes (_data/piles.yml, in the same scope), and test constitutional fit. The fit check
+# The matchmaker — the MIXED MODEL (civic-node#91). For each need Atlas carries
+# (_data/needs.yml), find candidate piles in the same scope from BOTH registries it holds:
+# the Tell-fronted piles it indexes (_data/piles.yml) and the hearsay piles it keeps itself
+# (_data/hearsay-piles.yml — shadow questions are exactly the kind that should be found when
+# searched; a hearsay candidate rides with provisioner "self" so the judge sees what it is
+# matching into, and is addressed through this Atlas since it has no Tell). The fit check
 # is the EJECTED seam (mirrors data-pile's bin/judge): set ATLAS_MATCH_CMD to an agent or a
 # human that reads the candidate's CONSTITUTION/questions and judges; the default is honest
 # (`needs-judgment`), so nothing auto-matches without a real judge. Emits matches.json
@@ -17,6 +21,7 @@ repo="$(cd "$here/.." && pwd)"
 # its OWN needs/piles/tells (see .github/actions/match) — the library aspect.
 needs_file="${ATLAS_NEEDS:-$repo/_data/needs.yml}"
 piles_file="${ATLAS_PILES:-$repo/_data/piles.yml}"
+hearsay_file="${ATLAS_HEARSAY:-$repo/_data/hearsay-piles.yml}"
 tells_file="${ATLAS_TELLS:-$repo/_data/tells.yml}"
 config_file="${ATLAS_CONFIG:-$repo/_config.yml}"
 out_file="${ATLAS_OUT:-$repo/matches.json}"
@@ -24,6 +29,7 @@ y2j() { ruby -ryaml -rjson -e 'puts JSON.generate(YAML.load_file(ARGV[0]) || [])
 
 needs="$(y2j "$needs_file")"
 piles="$(y2j "$piles_file")"
+hearsay="[]"; [ -f "$hearsay_file" ] && hearsay="$(y2j "$hearsay_file")"
 tells="$(y2j "$tells_file")"
 atlas_url="$(ruby -ryaml -e 'c=YAML.load_file(ARGV[0]) rescue {}; puts((c||{})["url"].to_s)' "$config_file" 2>/dev/null || true)"
 atlas_url="${atlas_url:-https://atlas.anecdote.channel}"
@@ -34,13 +40,23 @@ nn="$(jq 'length' <<<"$needs")"; i=0
 while [ "$i" -lt "$nn" ]; do
   need="$(jq -c ".[$i]" <<<"$needs")"; i=$((i+1))
   nscope="$(jq -r '.scope // ""' <<<"$need")"
-  # Prefilter: candidate piles Atlas indexes in the same scope.
-  cands="$(jq -c --arg s "$nscope" '[.[]|select(.scope==$s)]' <<<"$piles")"
+  # Prefilter: candidate piles Atlas indexes in the same scope — the Tell-fronted registry
+  # UNIONED with the hearsay keyring (mixed model; a keyring row is marked self-kept).
+  cands="$(jq -c --arg s "$nscope" --argjson h "$hearsay" \
+    '[.[]|select(.scope==$s)] + [$h[]|select(.scope==$s)|{id, scope, hearsay:true, repo_url:(.repo_url // "")}]' <<<"$piles")"
   turl="$(jq -r --arg s "$nscope" 'map(select(.scope==$s))|.[0].url // ""' <<<"$tells")"
   cn="$(jq 'length' <<<"$cands")"; j=0
   while [ "$j" -lt "$cn" ]; do
-    pid="$(jq -r ".[$j].id" <<<"$cands")"; j=$((j+1))
-    cand="$(jq -nc --arg a "$atlas_url" --arg t "$turl" --arg p "$pid" '{atlas_url:$a,tell_url:$t,pile_id:$p}')"
+    pid="$(jq -r ".[$j].id" <<<"$cands")"
+    hflag="$(jq -r ".[$j].hearsay // false" <<<"$cands")"
+    hrepo="$(jq -r ".[$j].repo_url // \"\"" <<<"$cands")"; j=$((j+1))
+    if [ "$hflag" = "true" ]; then
+      # a hearsay pile has no Tell: it is addressed through this Atlas, and says who keeps it.
+      cand="$(jq -nc --arg a "$atlas_url" --arg p "$pid" --arg r "$hrepo" \
+        '{atlas_url:$a,tell_url:$a,pile_id:$p,provisioner:"self",repo_url:$r}')"
+    else
+      cand="$(jq -nc --arg a "$atlas_url" --arg t "$turl" --arg p "$pid" '{atlas_url:$a,tell_url:$t,pile_id:$p}')"
+    fi
     if [ -n "$match_cmd" ]; then
       v="$(jq -nc --argjson need "$need" --argjson candidate "$cand" '{need:$need,candidate:$candidate}' | "$match_cmd")"
       verdict="$(jq -r '.verdict // "needs-judgment"' <<<"$v")"

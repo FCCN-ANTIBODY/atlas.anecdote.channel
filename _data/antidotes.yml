@@ -1,0 +1,36 @@
+# Registry of ANTIDOTE servers this Atlas tees to — the archivists it treats the way an honest
+# operator treats its log servers (CONSTITUTION.md -> "What I keep, I tee to the archivists I
+# list"; civic-node#91 "flush = a presumed PR", #94 "Atlas forwards dumb and fast; Antidote
+# distills").
+#
+# bin/tee loops EVERY server listed here and forwards everything the drop door kept — no
+# sharding, no jurisdiction modeling, no judging (the archive's black box infers what we don't
+# model). Each send is loose mail in the antidote intake door's own shape ({ from, ballots }),
+# written to _data/tee-outbox/<id>/ and recorded as a hash-linked entry in the OPEN ledger
+# _data/tee-ledger.json. Delivery is the PRESUMED PR: a PR onto the antidote's repo placing the
+# bundle at _data/intake-inbox.json, whose merge is the consent — visible by construction, so
+# the tee can never quietly become covert exfiltration (the #86 archival guard).
+#
+# Registration is mutual and by hand, the same pin-and-confirm gesture as a peer Atlas
+# (_data/atlases.yml): the archivist's identity is confirmed out-of-band, and this Atlas
+# registers WITH the antidote by signed PR in return (antidote ARCHITECTURE.draft-0.md ->
+# "An Atlas registers with an Antidote server"). Antidote never reaches out first.
+#
+# Each entry:
+#   id      stable slug for the antidote server (also its outbox directory segment)
+#   name    human-readable label
+#   url     the antidote's own domain (where its plaque index / heartbeat are served)
+#   repo    owner/name — where the presumed-PR delivery is opened
+#   scope   the constituency shape the antidote declared at charter (a commissioned bottle's
+#           contract shape, or an automatic ancestor like a state) — informational; the tee
+#           does NOT shard by it
+#   signer  the antidote's ledger-signer fingerprint (its keys/ledger.fpr) — the ownership anchor
+#
+# HONEST DEFAULT: this registry ships EMPTY, so bin/tee fires nothing until an operator
+# registers a real archivist. Illustrative shape (commented):
+# - id: colorado-antidote
+#   name: "Colorado (automatic ancestor)"
+#   url: "https://antidote.example.org"
+#   repo: example-org/antidote.colorado
+#   scope: "colorado"
+#   signer: "key:sha256:PLACEHOLDER-antidote-ledger-signer"

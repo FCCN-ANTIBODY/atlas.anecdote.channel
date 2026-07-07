@@ -12,6 +12,10 @@ secrets:
     kind: consent transport (write on the PEER Atlas being joined — the peer's grant, not ours)
     minter: the peer Atlas operator
     holder: "repo secret, read only by register-peer.yml (and the deferred bill emit)"
+  - name: PILE_NEW_TOKEN
+    kind: the CREATE credential for a hearsay keep (repo creation under the target owner + the NEW pile repo's secrets:write; the identity itself lands only in the new pile's own PILE_AGE_IDENTITY secret, never here — the keyring keeps the public recipient)
+    minter: the operator, by hand
+    holder: "repo secret, read only by hearsay-provision.yml (dispatch = the consent gesture)"
 
 namespaces: []
 # This repo's registration commits are signed via git's ssh signing (gpg.format=ssh), not

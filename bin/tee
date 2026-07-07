@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# bin/tee — exec shim; the logic lives in tee.mjs (importable by test/tee.test.mjs).
+exec node "$(cd "$(dirname "$0")" && pwd)/tee.mjs" "$@"

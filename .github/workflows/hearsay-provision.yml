@@ -1,0 +1,95 @@
+name: "Atlas · hearsay keep"
+
+# Stand up an Atlas-OWNED hearsay pile for an ownerless shadow question (civic-node#91;
+# CONSTITUTION.md -> "When a ballot has no owner anywhere, I may keep its question myself").
+# THE DISPATCH IS THE CONSENT GESTURE: a judge/human reads hearsay-plan.json (bin/hearsay)
+# first and fills these inputs from a candidate — nothing here fires on its own.
+#
+# The custody this workflow makes structural (mirror of data-pile's provision.yml, on the
+# OWNER path instead of the provisioner path):
+#   - Computer posture (`pile-new create --keygen`): the age identity is minted on the runner
+#     and stored as the NEW pile repo's own PILE_AGE_IDENTITY secret — never printed, never
+#     held in THIS repo. Exactly an ordinary keeper, no deviations.
+#   - No --provisioner flag: pile-new hard-refuses --provisioner with --keygen (a provisioner
+#     never touches an identity). The "a managed pile says so" transparency is stamped on the
+#     PUBLIC KEYRING instead (provisioner: "self:<id>", _data/hearsay-piles.yml).
+#   - The keyring commit records only the pile's public age recipient — the postable face of
+#     its key. Proof of possession is a reveal (data-pile bin/prove), never a surrender.
+#   - PILE_NEW_TOKEN is the CREATE credential (repo creation under the target owner + the new
+#     repo's secrets:write for the identity install). This Atlas's secret, provisioned by hand.
+#
+# After the run: fill the pile over the DROP channel (data-pile bin/drop-pack over the archived
+# ballots, pushed to the new pile's feed/drop) and let bin/tee keep forwarding to the listed
+# archivists. Teardown is a later, lossless gesture (deflate to the archive first).
+
+on:
+  workflow_dispatch:
+    inputs:
+      owner:
+        description: "Account/org the new hearsay pile repo is created under"
+        required: true
+      id:
+        description: "New pile id (lowercase slug; the plan suggests <pile>-hearsay)"
+        required: true
+      pile:
+        description: "The QUESTION identity: the ballots' pile slug"
+        required: true
+      poll:
+        description: "The QUESTION identity: the ballots' poll slug"
+        required: true
+      scope:
+        description: "Scope the ballots carried (e.g. colorado)"
+        required: true
+      question:
+        description: "Question text, when the ballots' surroundings carried one (optional)"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  keep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check out the data-pile toolbox (pile-new lives there)
+        uses: actions/checkout@v4
+        with:
+          repository: FCCN-ANTIBODY/data-pile
+          path: .data-pile-engine
+      - name: Install gh + age
+        run: |
+          command -v gh >/dev/null || (sudo apt-get update && sudo apt-get install -y gh)
+          command -v age-keygen >/dev/null || (sudo apt-get update && sudo apt-get install -y age)
+      - name: Stand up the pile (Computer posture — the Atlas owns this one)
+        env:
+          PILE_NEW_TOKEN: ${{ secrets.PILE_NEW_TOKEN }}
+          IN_OWNER: ${{ inputs.owner }}
+          IN_ID: ${{ inputs.id }}
+          IN_SCOPE: ${{ inputs.scope }}
+        run: |
+          [ -n "$PILE_NEW_TOKEN" ] || { echo "set the PILE_NEW_TOKEN secret (repo-create + new-repo-secrets credential)"; exit 1; }
+          .data-pile-engine/bin/pile-new create --owner "$IN_OWNER" --id "$IN_ID" --scope "$IN_SCOPE" --keygen \
+            | tee pile-new.out
+          # the printed handshake entry carries the ONLY thing this repo keeps: the public recipient.
+          grep -oE 'age1[ac-hj-np-z02-9]{58}' pile-new.out | head -1 > .recipient
+          [ -s .recipient ] || { echo "could not read the new pile's recipient from pile-new output"; exit 1; }
+      - name: Record the keep on the public keyring
+        env:
+          IN_OWNER: ${{ inputs.owner }}
+          IN_ID: ${{ inputs.id }}
+          IN_PILE: ${{ inputs.pile }}
+          IN_POLL: ${{ inputs.poll }}
+          IN_SCOPE: ${{ inputs.scope }}
+          IN_QUESTION: ${{ inputs.question }}
+        run: |
+          set -- record --id "$IN_ID" --pile "$IN_PILE" --poll "$IN_POLL" --scope "$IN_SCOPE" \
+                 --repo-url "https://github.com/$IN_OWNER/$IN_ID" --recipient "$(cat .recipient)"
+          [ -n "$IN_QUESTION" ] && set -- "$@" --question "$IN_QUESTION"
+          bin/hearsay "$@"
+          rm -f .recipient pile-new.out
+          git config user.name "atlas-hearsay"
+          git config user.email "atlas-hearsay@users.noreply.github.com"
+          git add _data/hearsay-piles.yml
+          git commit -m "hearsay: keep $IN_ID (question $IN_PILE/$IN_POLL) — public recipient on the keyring"
+          git push

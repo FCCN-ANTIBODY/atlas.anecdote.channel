@@ -1,0 +1,45 @@
+# THE PUBLIC KEYRING — data-piles this Atlas KEEPS ITSELF (the hearsay piles, civic-node#91).
+# CONSTITUTION.md -> "When a ballot has no owner anywhere, I may keep its question myself" and
+# "My keyring is public; my keys never are."
+#
+# A pile lands here only through the gated gesture: bin/custody plans, its ownerless residue
+# rises through bin/hearsay's plan, a judge/human consents and provisions (data-pile
+# `pile-new --keygen` — the identity becomes the NEW pile repo's own PILE_AGE_IDENTITY secret,
+# minted fresh, never printed, never derived from a master), and `bin/hearsay record` appends
+# the entry. NO SECRET EVER LIVES IN THIS FILE: `age_recipient` is the postable face of the
+# pile's key — derived from the secret, useless for reading. Proof this Atlas holds what opens
+# a pile is a REVEAL (data-pile bin/prove: a key-less party verifies a revealed block key
+# against the pile's signed manifest), never a surrendered identity.
+#
+# The question hangs OUTSIDE the encryption — pile/poll/scope (+ question when known) are
+# public here precisely so the matcher and the public can keep finding and answering a shadow
+# question (bin/match unions this registry into its candidates; provisioner "self:<id>" rides
+# the candidate so a judge sees what it is matching into).
+#
+# Each entry:
+#   id             the kept pile repo's slug (a DNS-label slug, as pile-new enforces)
+#   pile, poll     the QUESTION IDENTITY this pile keeps — the join key across piles/shards;
+#                  more piles may later carry batches on the same question, merged at aggregation
+#   scope          the constituency the ballots were trying to reach (as carried)
+#   question       the question text, when the ballots' surroundings carried one (optional)
+#   repo_url       where the kept pile lives
+#   age_recipient  the pile's PUBLIC age recipient (the postable half; encrypt-only)
+#   provisioner    "self:<atlas id>" — a managed pile says so even when we own it
+#   provisioner_spec  what the manager speaks (data-pile/pile-new/v1)
+#   provisioned_at when the keep began
+#   status         live | deflated | torn-down  (the lifecycle: live -> quiet -> lossless
+#                  deflate to the archive -> teardown; discoverability outlives the mailbox
+#                  but not the archive)
+#
+# Illustrative shape (commented — the registry ships EMPTY; nothing is kept until a judge says so):
+# - id: cd04-q9-hearsay
+#   pile: "cd04-q9"
+#   poll: "budget"
+#   scope: "colorado"
+#   question: "Keep or cut the library budget?"
+#   repo_url: "https://github.com/FCCN-ANTIBODY/cd04-q9-hearsay"
+#   age_recipient: "age1..."
+#   provisioner: "self:atlas"
+#   provisioner_spec: "data-pile/pile-new/v1"
+#   provisioned_at: "2026-07-07T00:00:00Z"
+#   status: live

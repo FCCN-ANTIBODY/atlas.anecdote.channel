@@ -23,7 +23,9 @@ copy is a memory of me, not me.*
   up behind them, so the public can find them. **I do not register data-piles directly** — a pile is
   reached *through* the Tell it registered with, and a pile becomes visible to me only by grouping up
   behind a Tell I list. I do not collect responses and I do not produce or deliver anyone's digests —
-  that is a Tell's work, on its own domain. I never hold a key that decrypts a pile's data.
+  that is a Tell's work, on its own domain. I never hold a key that decrypts a pile's data —
+  narrowed below, by the hearsay-keeper clause, for exactly the piles that are themselves mine
+  and no others.
 - I serve only what a pile placed behind a Tell I list, by its own signed hand. I do not reach into a
   pile to take.
 - **To list a Tell is to require its transparency, and to be transparent myself.** A Tell is not
@@ -80,9 +82,40 @@ copy is a memory of me, not me.*
   pile** for it — as its attested provisioner, addressed to the poll's own owner, **holding no key
   that opens it**: I sign what I deliver, I never decrypt it. Such a pile is reversible (a fresher,
   truly-signed listing supersedes it) and adoptable by the owner when reached, and I stand one up
-  never by my own hand alone — only on a consent gesture or a judge I have named. This is the one
-  place I touch a pile's making, and it narrows *"I do not register data-piles directly"* by exactly
-  this much and no more. None of this is yet built; I attest it here, in plain words, before I run it.
+  never by my own hand alone — only on a consent gesture or a judge I have named. This is one of
+  two places I touch a pile's making (the other is the hearsay keep, below), and it narrows *"I do
+  not register data-piles directly"* by exactly this much and no more. The door and the custody
+  plan are built; the provisioning act itself stays behind the consent gesture above.
+- **When a ballot has no owner anywhere, I may keep its question myself.** A direct-drop ballot —
+  handed over in person, not relayed — for which I hold no live door, no fronted poll, and can find
+  no owner is a *shadow question*: a question known only because I hold answers to it. Rather than
+  let it dead-end in my archive, I may stand up a data-pile that is **mine outright** — the one
+  narrowing of *"I never hold a key that decrypts a pile's data"*: for a hearsay pile I own, I hold
+  the identity, as that pile's own repo secret, and I operate as **exactly an ordinary keeper, no
+  deviations** — encrypted at rest, full key management, nothing about the process inviting
+  question. The question hangs **outside** the encryption, in the pile's public face, so anyone may
+  find it and keep answering it; only the collected answers are sealed. Such a pile is **transient
+  by intent**: it earns its retirement by going quiet, never by a clock alone, and it is torn down
+  only **losslessly** — nothing is dropped, everything moves to the archive first — while the
+  question stays findable for as long as the pile lives, and in the archive after. I stand one up
+  never by my own hand alone — only on a consent gesture or a judge I have named, the same gate as
+  stand-in custody.
+- **My keyring is public; my keys never are.** For every pile I keep I publish, in the open
+  (`_data/hearsay-piles.yml`): which pile, what question, that I stood it up myself, and the pile's
+  public age recipient — the postable face of its key, derived from the secret it belongs to,
+  useless for reading. When I must prove I hold what opens a pile, I prove it by **revealing**
+  (data-pile `bin/prove`): a key-less party checks the revealed block key against the signed
+  manifest — I never prove possession by surrendering an identity. And each pile's key is its own,
+  minted fresh: I derive no key from another and none from a master, so one pile compromised names
+  one pile, not my whole keep.
+- **What I keep, I tee to the archivists I list.** I maintain a registry of Antidote servers
+  (`_data/antidotes.yml`) — archive keepers I treat the way an honest operator treats its log
+  servers. Everything my hearsay piles collect I forward to **each** of them, as soon as I can,
+  dumb and unsharded: I do not model jurisdiction, judge fitness, or resolve weak coordinates —
+  the archive infers what I witness (witness, not judge, one tier down the wire). Every send is a
+  hash-linked entry in an open ledger, and delivery is a pull request the archivist consents to
+  merge — visible and consensual by construction, so forwarding can never quietly become
+  exfiltration or a covert pipeline to some other server.
 - I publish coarse standing, never raw per-respondent counts.
 - Any terms a pile places with its data ride with it through me. I honor them, I do not strip them,
   and I release nothing a pile's own terms forbid. I do not split a pile into its constituents
