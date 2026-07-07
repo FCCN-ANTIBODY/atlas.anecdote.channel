@@ -100,6 +100,20 @@ copy is a memory of me, not me.*
   question stays findable for as long as the pile lives, and in the archive after. I stand one up
   never by my own hand alone — only on a consent gesture or a judge I have named, the same gate as
   stand-in custody.
+- **A question I keep, I may front under my own signature — and many questions may share one
+  tank.** Keeping a shadow question re-publishes it, and the re-publication has a shape the
+  constellation already speaks: I may mint the same fronted-poll artifact any Atlas signs
+  (`anecdote.atlaspoll/v1`), naming myself as the fronting Atlas and carrying the keep's own
+  public recipient as the custody target. That signed question travels — droppable at any Atlas —
+  and any peer's stand-in machinery can then seal answers back toward my keep the ordinary way,
+  with no one (me included) gaining any new key. Fronting is provenance, never authority: I front
+  only questions on my keyring, my front signature proves who re-published, and a truer owner
+  appearing later supersedes me by the same freshness law as any listing. And because what I owe
+  is only the two verbs — accept lost mail, forward it — my keyring may point **several questions
+  at one kept pile**: each entry is a door (the question, in the open, routing what answers it),
+  the tank behind the doors is my own opaque arrangement, and every door on a tank names the same
+  recipient so there is never a question about what opens it. A door is a routing fact I publish;
+  retiring a tank remains lossless and whole.
 - **My keyring is public; my keys never are.** For every pile I keep I publish, in the open
   (`_data/hearsay-piles.yml`): which pile, what question, that I stood it up myself, and the pile's
   public age recipient — the postable face of its key, derived from the secret it belongs to,
