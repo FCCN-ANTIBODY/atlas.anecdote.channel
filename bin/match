@@ -42,8 +42,11 @@ while [ "$i" -lt "$nn" ]; do
   nscope="$(jq -r '.scope // ""' <<<"$need")"
   # Prefilter: candidate piles Atlas indexes in the same scope — the Tell-fronted registry
   # UNIONED with the hearsay keyring (mixed model; a keyring row is marked self-kept).
+  # only LIVE doors match — a retired keep's question stays findable in archived/, but a match
+  # is an invitation to route answers into a mailbox, and a retired mailbox takes none (a fresh
+  # drop rises into a NEW tank instead — the stone skips).
   cands="$(jq -c --arg s "$nscope" --argjson h "$hearsay" \
-    '[.[]|select(.scope==$s)] + [$h[]|select(.scope==$s)|{id, scope, hearsay:true, repo_url:(.repo_url // ""), q:((.pile // "?") + "/" + (.poll // "?"))}]' <<<"$piles")"
+    '[.[]|select(.scope==$s)] + [$h[]|select(.scope==$s and ((.status // "live")=="live"))|{id, scope, hearsay:true, repo_url:(.repo_url // ""), q:((.pile // "?") + "/" + (.poll // "?"))}]' <<<"$piles")"
   turl="$(jq -r --arg s "$nscope" 'map(select(.scope==$s))|.[0].url // ""' <<<"$tells")"
   cn="$(jq 'length' <<<"$cands")"; j=0
   while [ "$j" -lt "$cn" ]; do

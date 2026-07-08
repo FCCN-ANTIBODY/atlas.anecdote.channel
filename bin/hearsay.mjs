@@ -77,7 +77,9 @@ export function runHearsayPlan(root, opts = {}) {
   const self = selfId(root);
   const custody = readJson(custodyPath, null);
   const kept = readKeyring(keyringPath);
-  const keptQuestions = new Set(kept.map((k) => `${k.pile}/${k.poll}`));
+  // only LIVE doors home a question: a deflated/torn-down keep is retired, so a fresh wave of
+  // ballots for the same question rises again into a NEW tank (the stone skips).
+  const keptQuestions = new Set(kept.filter((k) => (k.status || "live") === "live").map((k) => `${k.pile}/${k.poll}`));
 
   // The candidates are exactly custody's archiveOnly rows: they ROSE (mass or scope-fit — the same
   // honest thresholds; nothing here re-lowers them) but no owner could be found or sealed to.

@@ -1,0 +1,51 @@
+name: "Atlas · retire a keep"
+
+# Walk a kept tank through its retirement (CONSTITUTION.md -> "transient by intent… torn down
+# only losslessly"; civic-node#91 lifecycle). THE DISPATCH IS THE CONSENT GESTURE — a
+# judge/human reads retire-plan.json (bin/retire) first; nothing here fires on its own, and
+# bin/retire re-verifies the default-hold guard regardless (every record teed to every listed
+# archivist, or the deflate refuses — never evict into a hole).
+#
+#   deflate  — local and lossless: the tank's ballots MOVE whole from _data/drop-archive to
+#              archived/<scope>/<poll>/ at the served root, the log-band report lands at
+#              archived/reports/<id>.json, and the keyring walks live -> deflated.
+#   teardown — records the mailbox teardown (keyring deflated -> torn-down) and prints the
+#              remote gesture (prune-pile-history on the pile repo, then archive it) — the
+#              gesture itself stays in the operator's hands.
+#
+# No secret is read beyond the built-in token that commits the result.
+
+on:
+  workflow_dispatch:
+    inputs:
+      act:
+        description: "Which retirement step"
+        required: true
+        type: choice
+        options:
+          - deflate
+          - teardown
+      id:
+        description: "The kept tank's id (as on _data/hearsay-piles.yml)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  retire:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run the consented step
+        env:
+          IN_ACT: ${{ inputs.act }}
+          IN_ID: ${{ inputs.id }}
+        run: |
+          bin/retire "$IN_ACT" --id "$IN_ID"
+          git config user.name "atlas-retire"
+          git config user.email "atlas-retire@users.noreply.github.com"
+          git add -A   # the keyring walk, the drop-archive moves, and archived/ — retire's whole footprint
+          git diff --cached --quiet && { echo "nothing changed"; exit 0; }
+          git commit -m "retire: $IN_ACT '$IN_ID'"
+          git push
