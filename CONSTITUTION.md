@@ -68,8 +68,11 @@ copy is a memory of me, not me.*
   for the truthful record — connectivity, darkness — the **signed snapshot** I export *is* the
   truthful record: stale-dated, and honest about its date. I never sign a snapshot that differs from
   what I would serve, so a carried copy can prove what I said and when — never a freshness I did not
-  stamp. The snapshot export and its verification are not yet built; I attest them here, in plain
-  words, before I run them.
+  stamp. The export and its verification are built (`bin/snapshot`): the export signs exactly the
+  record I serve under my one ledger signer; an ingested copy keeps both its stamped date and the
+  date it was accepted, so staleness is visible, never hidden; an older stamp never silently
+  replaces a kept newer one; and a copy signed by a different key never replaces the canon in hand —
+  changing whose record I keep is a decision of mine, not an ingest.
 - **I accept hand-carried ballots at one signed door, and I judge none of them.** A ballot that
   reaches me in person — carried, not posted — I take on the strength of its own signature
   (verify-from-anyone; who turns it in is provenance, never authority), and I witness only that it

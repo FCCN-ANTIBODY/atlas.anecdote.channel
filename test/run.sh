@@ -185,6 +185,14 @@ else
   echo "[retire] SKIPPED — node not available"
 fi
 
+if command -v node >/dev/null 2>&1; then
+  echo "[snapshot] the signed snapshot: real at one time, staleness honest, never older-over-newer, canon pinned"
+  node "$(cd "$(dirname "$0")/.." && pwd)/test/snapshot.test.mjs" || { echo "FAIL: snapshot test" >&2; exit 1; }
+  echo "  ok: bin/snapshot exports exactly the served record, verifies from anyone, ingests without regressing"
+else
+  echo "[snapshot] SKIPPED — node not available"
+fi
+
 echo "ALL TESTS PASSED"
 
 echo "[custody] the declared boundary holds (keys/custody.yml x bin/check-custody)"
