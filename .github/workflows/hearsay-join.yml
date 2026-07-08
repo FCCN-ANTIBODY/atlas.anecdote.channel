@@ -1,0 +1,57 @@
+name: "Atlas · hearsay join"
+
+# Add a DOOR to a tank the keyring already keeps (CONSTITUTION.md -> "many questions may share
+# one tank"): a new shadow question routed at an EXISTING hearsay pile. THE DISPATCH IS THE
+# CONSENT GESTURE — a judge/human reads hearsay-plan.json first and picks a candidate's `join`
+# gesture. No repo is created and no key exists anywhere in this flow: the door inherits the
+# tank's public recipient/repo from the keyring itself (bin/hearsay refuses a mismatch), so the
+# only credential is the built-in token that commits the keyring row.
+#
+# After the run: `bin/hearsay front --pile <pile> --poll <poll>` (operator-side — the front
+# signer lives with the operator, the dump-signer pattern) re-publishes the question under this
+# Atlas's signature, and the fill rides the drop channel as ever.
+
+on:
+  workflow_dispatch:
+    inputs:
+      id:
+        description: "The KEPT tank's id (must already be on _data/hearsay-piles.yml)"
+        required: true
+      pile:
+        description: "The QUESTION identity: the ballots' pile slug"
+        required: true
+      poll:
+        description: "The QUESTION identity: the ballots' poll slug"
+        required: true
+      scope:
+        description: "Scope the ballots carried (e.g. colorado)"
+        required: true
+      question:
+        description: "Question text, when the ballots' surroundings carried one (optional)"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  join:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record the door (inherits the tank's recipient/repo from the keyring)
+        env:
+          IN_ID: ${{ inputs.id }}
+          IN_PILE: ${{ inputs.pile }}
+          IN_POLL: ${{ inputs.poll }}
+          IN_SCOPE: ${{ inputs.scope }}
+          IN_QUESTION: ${{ inputs.question }}
+        run: |
+          set -- record --id "$IN_ID" --pile "$IN_PILE" --poll "$IN_POLL" --scope "$IN_SCOPE"
+          [ -n "$IN_QUESTION" ] && set -- "$@" --question "$IN_QUESTION"
+          bin/hearsay "$@"
+          git config user.name "atlas-hearsay"
+          git config user.email "atlas-hearsay@users.noreply.github.com"
+          git add _data/hearsay-piles.yml
+          git diff --cached --quiet && { echo "door already on the keyring — nothing to commit"; exit 0; }
+          git commit -m "hearsay: new door $IN_PILE/$IN_POLL on the '$IN_ID' tank"
+          git push

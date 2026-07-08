@@ -23,7 +23,7 @@ jq -e '.[0] | .need_id and .asker_repo and .candidate.atlas_url and .candidate.t
 jq -e '.[0].consent_required == true' matches.json >/dev/null || fail "consent_required not derived from terms"
 ok "match carries atlas+tell+pile address; consent_required follows the need's terms"
 
-echo "[2b] the mixed model: a hearsay pile the Atlas keeps is matchable, marked self-kept"
+echo "[2b] the mixed model: hearsay DOORS the Atlas keeps are matchable, marked self-kept, distinct per question"
 HY="$(mktemp -d)"; cat > "$HY/hearsay.yml" <<'YAML'
 - id: orphan-hearsay
   pile: "orphan"
@@ -33,16 +33,26 @@ HY="$(mktemp -d)"; cat > "$HY/hearsay.yml" <<'YAML'
   age_recipient: "age1lggyhqrw2nlhcxprm67z43rta597azn8gknawjehu9d9dl0jq3yqqvfafg"
   provisioner: "self:atlas"
   status: live
+- id: orphan-hearsay
+  pile: "stray"
+  poll: "parks"
+  scope: "colorado"
+  repo_url: "https://github.com/acme/orphan-hearsay"
+  age_recipient: "age1lggyhqrw2nlhcxprm67z43rta597azn8gknawjehu9d9dl0jq3yqqvfafg"
+  provisioner: "self:atlas"
+  status: live
 YAML
 ATLAS_HEARSAY="$HY/hearsay.yml" ATLAS_MATCH_CMD="$W/yes" bin/match >/dev/null
-jq -e '[.[]|select(.candidate.pile_id=="orphan-hearsay")]|length == 1' matches.json >/dev/null \
-  || fail "hearsay pile did not surface as a candidate"
-jq -e '.[]|select(.candidate.pile_id=="orphan-hearsay")|.candidate.provisioner=="self" and (.candidate.tell_url|length>0)' matches.json >/dev/null \
+jq -e '[.[]|select(.candidate.pile_id=="orphan-hearsay")]|length == 2' matches.json >/dev/null \
+  || fail "two doors on one tank did not surface as two candidates"
+jq -e '[.[]|select(.candidate.pile_id=="orphan-hearsay")|.candidate.question]|sort == ["orphan/budget","stray/parks"]' matches.json >/dev/null \
+  || fail "the door's question does not ride the candidate"
+jq -e '.[]|select(.candidate.question=="orphan/budget")|.candidate.provisioner=="self" and (.candidate.tell_url|length>0)' matches.json >/dev/null \
   || fail "hearsay candidate not marked self-kept / not addressed through the Atlas"
 # and the honest default still holds for the union: no judge, no match.
 ATLAS_HEARSAY="$HY/hearsay.yml" bin/match >/dev/null
 [ "$(jq 'length' matches.json)" = 0 ] || fail "a hearsay candidate auto-matched without a judge"
-ok "shadow questions are found when searched (provisioner:self rides); still nothing without a judge"
+ok "doors are found when searched (question + provisioner:self ride); still nothing without a judge"
 
 echo "[3] registry + manifest parse"
 ruby -ryaml -e 'YAML.load_file("_data/needs.yml")' || fail "_data/needs.yml not valid YAML"

@@ -43,17 +43,19 @@ while [ "$i" -lt "$nn" ]; do
   # Prefilter: candidate piles Atlas indexes in the same scope — the Tell-fronted registry
   # UNIONED with the hearsay keyring (mixed model; a keyring row is marked self-kept).
   cands="$(jq -c --arg s "$nscope" --argjson h "$hearsay" \
-    '[.[]|select(.scope==$s)] + [$h[]|select(.scope==$s)|{id, scope, hearsay:true, repo_url:(.repo_url // "")}]' <<<"$piles")"
+    '[.[]|select(.scope==$s)] + [$h[]|select(.scope==$s)|{id, scope, hearsay:true, repo_url:(.repo_url // ""), q:((.pile // "?") + "/" + (.poll // "?"))}]' <<<"$piles")"
   turl="$(jq -r --arg s "$nscope" 'map(select(.scope==$s))|.[0].url // ""' <<<"$tells")"
   cn="$(jq 'length' <<<"$cands")"; j=0
   while [ "$j" -lt "$cn" ]; do
     pid="$(jq -r ".[$j].id" <<<"$cands")"
     hflag="$(jq -r ".[$j].hearsay // false" <<<"$cands")"
-    hrepo="$(jq -r ".[$j].repo_url // \"\"" <<<"$cands")"; j=$((j+1))
+    hrepo="$(jq -r ".[$j].repo_url // \"\"" <<<"$cands")"
+    hq="$(jq -r ".[$j].q // \"\"" <<<"$cands")"; j=$((j+1))
     if [ "$hflag" = "true" ]; then
-      # a hearsay pile has no Tell: it is addressed through this Atlas, and says who keeps it.
-      cand="$(jq -nc --arg a "$atlas_url" --arg p "$pid" --arg r "$hrepo" \
-        '{atlas_url:$a,tell_url:$a,pile_id:$p,provisioner:"self",repo_url:$r}')"
+      # a hearsay DOOR has no Tell: addressed through this Atlas, saying who keeps it and which
+      # question it routes (many doors may share one tank; the question keeps them distinct).
+      cand="$(jq -nc --arg a "$atlas_url" --arg p "$pid" --arg r "$hrepo" --arg q "$hq" \
+        '{atlas_url:$a,tell_url:$a,pile_id:$p,provisioner:"self",repo_url:$r,question:$q}')"
     else
       cand="$(jq -nc --arg a "$atlas_url" --arg t "$turl" --arg p "$pid" '{atlas_url:$a,tell_url:$t,pile_id:$p}')"
     fi
