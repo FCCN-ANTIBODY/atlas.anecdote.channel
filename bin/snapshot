@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# bin/snapshot — exec shim; the logic lives in snapshot.mjs (importable by test/snapshot.test.mjs).
+exec node "$(cd "$(dirname "$0")" && pwd)/snapshot.mjs" "$@"
