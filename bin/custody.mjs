@@ -74,6 +74,7 @@ export async function runCustody(root, opts = {}) {
   const archiveDir = opts.archiveDir || p("ATLAS_ARCHIVE", "_data/drop-archive");
   const atlaspollsPath = opts.atlaspolls || p("ATLAS_ATLASPOLLS", "_data/atlaspolls.json");
   const pilesPath = p("ATLAS_PILES", "_data/piles.yml");
+  const keyringPath = opts.keyring || p("ATLAS_HEARSAY", "_data/hearsay-piles.yml");
   const outPath = opts.out || p("ATLAS_CUSTODY_OUT", "custody-plan.json");
 
   const mass = opts.mass ?? (process.env.ATLAS_CUSTODY_MASS ? +process.env.ATLAS_CUSTODY_MASS : Infinity);
@@ -84,6 +85,11 @@ export async function runCustody(root, opts = {}) {
   const self = { id: scalar(selfYml, "id") || "atlas" };
 
   const listedPiles = new Set(readItems(existsSync(pilesPath) ? readFileSync(pilesPath, "utf8") : "").map((x) => x.id).filter(Boolean));
+  // Questions the hearsay keyring keeps LIVE are homed — in a pile this Atlas itself owns. Without
+  // this, our own self-fronted atlaspoll (bin/hearsay front) would raise our own kept question back
+  // into a stand-in plan every run — a self-loop a judge could double-provision.
+  const keptQuestions = new Set(readItems(existsSync(keyringPath) ? readFileSync(keyringPath, "utf8") : "")
+    .filter((k) => (k.status || "live") === "live" && k.pile && k.poll).map((k) => `${k.pile}/${k.poll}`));
   const fronted = readJson(atlaspollsPath, []);
 
   // group the archive by (pile,poll,scope), counting DISTINCT ballots (content-id) as the mass.
@@ -112,6 +118,7 @@ export async function runCustody(root, opts = {}) {
   for (const g of groups.values()) {
     const massN = g.ids.size;
     if (listedPiles.has(g.pile)) { skipped.push({ ...brief(g, massN), why: "homed — a pile I list" }); continue; }
+    if (keptQuestions.has(`${g.pile}/${g.poll}`)) { skipped.push({ ...brief(g, massN), why: "kept — a hearsay pile I keep answers this (see the keyring)" }); continue; }
     const scopeFit = !!g.scope && claimedScopes.has(g.scope);
     const massFit = massN >= mass;
     if (!scopeFit && !massFit) { skipped.push({ ...brief(g, massN), why: "below threshold (no mass, no scope-fit)" }); continue; }

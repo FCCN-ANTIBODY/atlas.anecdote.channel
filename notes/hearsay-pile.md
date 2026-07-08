@@ -74,6 +74,36 @@ discoverability outlives the mailbox but not the archive. A fresh drop after tea
 a *new* pile for the same question — same `pile`/`poll` join key on the keyring, merged at
 aggregation (the stone skips again).
 
+## Many doors, one tank — and the front is the load balancer
+
+The second slice resolved the pile-per-question fork: **questions are the many, addressable
+thing; piles are the few, opaque thing; the keyring is the router between them.**
+
+- A keyring row is a **door**: the question, in the open, routing what answers it. Several
+  doors may share one tank (`bin/hearsay record` on a kept id joins it, inheriting the tank's
+  recipient/repo; mismatches refused, never rewritten). #91's refinement blessed the storage
+  half outright ("pile-splitting is arbitrary and should be truly opaque… we owe no one a
+  workspace that looks like anything in particular"), and the drop channel makes mixed content
+  native: independent per-block keys mean `bin/prove` disclosure is already **per-question out
+  of a mixed pile**, which a ratchet feed could never do.
+- The door check stays **witness-level**: verified ballot × (pile,poll) matches a listed door.
+  It routes; it never judges fitness. A ballot failing it floods onward and archives as ever.
+- **`bin/hearsay front`** re-publishes a kept question as the constellation's own
+  `anecdote.atlaspoll/v1` — `fronts` = this Atlas, `age_recipient` = the keep's — signed by the
+  front signer (`keys/front-signer.pk8`, gitignored; `keys/front.fpr` committed, the
+  dump-signer pattern) and held in `_data/atlaspolls.json`. Verified byte-compatible with
+  `composer/atlaspoll.mjs`'s own verifier. This is #91's "re-publication of the question" made
+  literal, and it turns **every peer Atlas's already-merged custody machinery into the
+  distribution tree**: a verifiable fronted poll carrying a recipient is exactly what their
+  `bin/custody` needs to seal stand-in piles back toward this keep — no new mechanism, and no
+  one gains a key. "Load balancing the tree" collapses into the choice of recipient per front.
+- **Self-loop guard**: `bin/custody` now skips questions the keyring keeps live ("kept — a
+  hearsay pile I keep answers this"), since our own front would otherwise raise our own kept
+  question into a stand-in plan every run.
+- **Partition heuristic**: mixing weakens nothing cryptographically, but one repo secret opens
+  one tank and teardown is per-branch — so partition by expected **retirement cohort** (the
+  plan's join gesture suggests a live tank in the same scope), not by question.
+
 ## Open questions carried forward (from #91, not resolved here)
 
 - The exact dedup key at aggregation (content-id, with question+answer as the histogram

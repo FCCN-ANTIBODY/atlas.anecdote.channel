@@ -16,8 +16,17 @@
 # question (bin/match unions this registry into its candidates; provisioner "self:<id>" rides
 # the candidate so a judge sees what it is matching into).
 #
+# MANY DOORS, ONE TANK: each entry is a DOOR — a question routed at a kept pile — and several
+# doors may share one `id` (one tank; the drop channel's per-block keys make mixed content and
+# per-question disclosure native). Every door on a tank names the same recipient/repo;
+# bin/hearsay record refuses a mismatch. A kept question may also be RE-PUBLISHED under this
+# Atlas's own signature (bin/hearsay front -> _data/atlaspolls.json, signer fingerprint at
+# keys/front.fpr): the signed anecdote.atlaspoll/v1 travels to any Atlas, whose existing
+# custody machinery can then seal stand-in piles back toward this keep.
+#
 # Each entry:
-#   id             the kept pile repo's slug (a DNS-label slug, as pile-new enforces)
+#   id             the kept pile repo's slug (a DNS-label slug, as pile-new enforces);
+#                  repeated across doors that share the tank
 #   pile, poll     the QUESTION IDENTITY this pile keeps — the join key across piles/shards;
 #                  more piles may later carry batches on the same question, merged at aggregation
 #   scope          the constituency the ballots were trying to reach (as carried)

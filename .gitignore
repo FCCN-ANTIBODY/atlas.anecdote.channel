@@ -7,3 +7,4 @@ _site/
 vendor/
 keys/dump-signer.pk8
 keys/above-signer.pk8
+keys/front-signer.pk8
