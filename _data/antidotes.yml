@@ -26,11 +26,22 @@
 #           does NOT shard by it
 #   signer  the antidote's ledger-signer fingerprint (its keys/ledger.fpr) — the ownership anchor
 #
-# HONEST DEFAULT: this registry ships EMPTY, so bin/tee fires nothing until an operator
-# registers a real archivist. Illustrative shape (commented):
-# - id: colorado-antidote
-#   name: "Colorado (automatic ancestor)"
-#   url: "https://antidote.example.org"
-#   repo: example-org/antidote.colorado
-#   scope: "colorado"
-#   signer: "key:sha256:PLACEHOLDER-antidote-ledger-signer"
+# Optional fields the retirement flush reads (bin/retire):
+#   constitution  the COMMON CONSTITUTION this bottle OFFERS (its antidote.yml `constitution:`
+#                 hash). Only an Antidote determines a COMMON, so a flush teleport rides under
+#                 the archivist's declared offer — absent here (and no --common), that
+#                 archivist is skipped, narrated. The antidote below is UNCHARTERED today;
+#                 record its hash here when it charters.
+#
+# THE FIRST REAL ARCHIVIST — the antidote engine repo itself. Registered live so bin/tee
+# forwards to it; two honest gaps, each blocking exactly the step that needs it and no more:
+#   - signer: its keys/ledger.fpr does not exist until its first attested intake run mints the
+#     ledger signer. bin/tee sends without it; bin/retire release REFUSES until the real
+#     fingerprint is pinned here (confirmed out-of-band — the tell.signers handoff, one tier up).
+#   - constitution: unchartered (admits nothing yet) — intake will queue/refuse until the bottle
+#     declares terms; the tee keeps its ledger either way, and nothing is ever released on it.
+- id: antidote
+  name: "Antidote (the archivist engine)"
+  url: "https://fccn-antibody.github.io/antidote/"   # until a domain lands (no CNAME yet)
+  repo: FCCN-ANTIBODY/antidote
+  signer: "PIN-ME:keys/ledger.fpr-after-first-attested-intake"

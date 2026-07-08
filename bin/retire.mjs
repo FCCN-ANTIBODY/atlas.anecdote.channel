@@ -32,18 +32,41 @@
 //     requires status deflated, walks the keyring to torn-down. Discoverability outlives the
 //     mailbox but not the archive.
 //
+// And the last two, the FLUSH-ELSEWHERE (#91's final verb; the raw leaves only against proof):
+//
+//   flush --id TANK — compose one antidote.teleport/v1 bundle PER registered archivist from the
+//     tank's archived/ raw (byte-compatible with antidote bin/egress: sorted content-id
+//     commitments, digest = contentId({seq, prev_digest, commitments}) chained through our own
+//     open flush ledger — custody OUT). The COMMON CONSTITUTION governing the bundle is never
+//     computed here (only an Antidote determines a COMMON): it is the archivist's declared offer
+//     (the registry entry's `constitution:`) or an explicit --common; absent both, that
+//     archivist is skipped and told why. Delivery stays the presumed PR; nothing local changes.
+//
+//   release --id TANK — the only step that ever lets raw go, and it goes ONLY against RECEIPTS:
+//     for EVERY registered archivist, a copy of its intake ledger at _data/receipts/<id>.json
+//     must (1) hash to its attested head, (2) verify against the signer PINNED in
+//     _data/antidotes.yml, and (3) carry a custody-IN entry bound to our teleport by the SAME
+//     digest, whose `admitted` covers every commitment (a queued/refused record blocks release —
+//     it must be re-homed, never silently dropped). Then, and only then, the tank's raw leaves
+//     archived/ (the coarse report stays forever) and the keyring walks torn-down -> flushed.
+//     Our tee/flush tally proves WE SENT; the receipt proves THEY HOLD — release needs the second.
+//
 //   bin/retire                      # plan: write retire-plan.json (for a judge)
 //   bin/retire deflate --id TANK
 //   bin/retire teardown --id TANK
+//   bin/retire flush --id TANK [--common sha256:…]
+//   bin/retire release --id TANK
 //
 // Env (ATLAS_* overrides): ATLAS_QUIET_DAYS (UNSET => Infinity => nothing quiet), ATLAS_HEARSAY,
 // ATLAS_ARCHIVE (default _data/drop-archive), ATLAS_TEE_LEDGER, ATLAS_ANTIDOTES, ATLAS_ARCHIVED
-// (default archived/), ATLAS_RETIRE_OUT (default retire-plan.json).
+// (default archived/), ATLAS_RETIRE_OUT (default retire-plan.json), ATLAS_FLUSH_LEDGER (default
+// _data/flush-ledger.json), ATLAS_FLUSH_OUT (default _data/flush-outbox), ATLAS_RECEIPTS
+// (default _data/receipts).
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, renameSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, renameSync, unlinkSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
-import { contentId, readItems } from "./drop.mjs";
+import { contentId, readItems, verifyAttested } from "./drop.mjs";
 import { readKeyring } from "./hearsay.mjs";
 
 function scalar(yml, key) { const m = yml.match(new RegExp(`^${key}:\\s*(.*)$`, "m")); return m ? m[1].replace(/\s+#.*$/, "").trim().replace(/^"(.*)"$/, "$1") : ""; }
@@ -255,9 +278,135 @@ export async function runTeardown(root, opts = {}) {
   ] };
 }
 
+// ---- the archived/ side of a tank: its doors' raw, with files (the flush/release working set) ---------------
+function archivedFor(archivedDir, tankDoors) {
+  const keys = new Set(tankDoors.map(doorKey));
+  return walkArchive(archivedDir).filter((r) => keys.has(`${r.b.pile}/${r.b.poll}`));
+}
+
+// ---- flush: compose the digest-bound teleport per archivist (custody OUT; delivery stays a PR) --------------
+export async function runFlush(root, opts = {}) {
+  const at = opts.now || new Date().toISOString();
+  const id = opts.id;
+  if (!id) throw new Error("retire flush: --id TANK is required");
+  const p = (env, rel) => process.env[env] || path.join(root, rel);
+  const archivedDir = opts.archivedDir || p("ATLAS_ARCHIVED", "archived");
+  const ledgerPath = opts.flushLedger || p("ATLAS_FLUSH_LEDGER", "_data/flush-ledger.json");
+  const outDir = opts.outDir || p("ATLAS_FLUSH_OUT", "_data/flush-outbox");
+  const keyringPath = opts.keyring || p("ATLAS_HEARSAY", "_data/hearsay-piles.yml");
+  const antidotesPath = opts.antidotes || p("ATLAS_ANTIDOTES", "_data/antidotes.yml");
+
+  const tankDoors = readKeyring(keyringPath).filter((d) => d.id === id);
+  if (!tankDoors.length) throw new Error(`retire flush: no keyring doors for tank ${id}`);
+  if (!tankDoors.every((d) => d.status === "deflated" || d.status === "torn-down"))
+    throw new Error(`retire flush: tank ${id} is not retired — the flush composes from archived/; deflate first`);
+  const antidotes = (existsSync(antidotesPath) ? readItems(readFileSync(antidotesPath, "utf8")) : []).filter((a) => a.id);
+  if (!antidotes.length) throw new Error("retire flush: no archivist registered (_data/antidotes.yml)");
+
+  const held = [];
+  for (const r of archivedFor(archivedDir, tankDoors)) held.push({ ...r, id: await contentId(r.b) });
+  if (!held.length) throw new Error(`retire flush: nothing under archived/ for tank ${id}`);
+  const commitments = held.map((h) => h.id).sort();
+  const records = commitments.map((c) => held.find((h) => h.id === c).b);
+
+  const ledger = readJson(ledgerPath, { schema: "atlas.flush-ledger/v1", entries: [] });
+  const bundles = [], skipped = [];
+  for (const a of antidotes) {
+    const existing = ledger.entries.find((e) => e.kind === "teleport" && e.antidote === a.id && e.pile === id);
+    if (existing) { bundles.push({ antidote: a.id, digest: existing.digest, file: existing.file, reused: true }); continue; }
+    // only an Antidote determines a COMMON — ours is the archivist's declared offer, or explicit.
+    const common = opts.common || a.constitution || null;
+    if (!common) { skipped.push({ antidote: a.id, why: "no COMMON CONSTITUTION — the registry entry declares none and --common was not given (no constitution, no catalog)" }); continue; }
+
+    const teleports = ledger.entries.filter((e) => e.kind === "teleport");
+    const seq = teleports.length;
+    const prevDigest = teleports.length ? teleports[teleports.length - 1].digest : null;
+    const digest = await contentId({ seq, prev_digest: prevDigest, commitments }); // = antidote bin/egress's derivation
+    const bundle = { schema: "antidote.teleport/v1", from: selfId(root), pile: id, seq, prev_digest: prevDigest, at,
+      common_constitution: common, commitments, digest, records };
+    mkdirSync(path.join(outDir, a.id), { recursive: true });
+    const file = path.join(outDir, a.id, `${id}-${String(seq).padStart(6, "0")}.json`);
+    writeFileSync(file, JSON.stringify(bundle, null, 2) + "\n");
+
+    const prev = ledger.entries[ledger.entries.length - 1] || null;
+    const entry = { seq: ledger.entries.length, at, kind: "teleport", antidote: a.id, pile: id,
+      common_constitution: common, sent: commitments, digest, file: path.relative(root, file),
+      prev_hash: prev ? prev.this_hash : null };
+    entry.this_hash = await contentId(entry);
+    ledger.entries.push(entry);
+    bundles.push({ antidote: a.id, digest, file: entry.file, count: commitments.length });
+  }
+  if (bundles.some((b) => !b.reused)) writeFileSync(ledgerPath, JSON.stringify(ledger, null, 2) + "\n");
+  return { id, bundles, skipped,
+    deliver: "each bundle is a presumed PR onto the archivist's repo (_data/intake-inbox.json); its intake door re-derives the digest and refuses the bundle whole on any mismatch. Bring back its ledger/manifest.json as _data/receipts/<antidote-id>.json for bin/retire release." };
+}
+
+// ---- release: raw leaves ONLY against verified receipts from EVERY archivist --------------------------------
+export async function runRelease(root, opts = {}) {
+  const at = opts.now || new Date().toISOString();
+  const id = opts.id;
+  if (!id) throw new Error("retire release: --id TANK is required");
+  const p = (env, rel) => process.env[env] || path.join(root, rel);
+  const archivedDir = opts.archivedDir || p("ATLAS_ARCHIVED", "archived");
+  const ledgerPath = opts.flushLedger || p("ATLAS_FLUSH_LEDGER", "_data/flush-ledger.json");
+  const receiptsDir = opts.receipts || p("ATLAS_RECEIPTS", "_data/receipts");
+  const keyringPath = opts.keyring || p("ATLAS_HEARSAY", "_data/hearsay-piles.yml");
+  const antidotesPath = opts.antidotes || p("ATLAS_ANTIDOTES", "_data/antidotes.yml");
+
+  const tankDoors = readKeyring(keyringPath).filter((d) => d.id === id);
+  if (!tankDoors.length) throw new Error(`retire release: no keyring doors for tank ${id}`);
+  if (!tankDoors.every((d) => d.status === "torn-down"))
+    throw new Error(`retire release: tank ${id} is not torn-down — the raw leaves last, after the mailbox`);
+  const antidotes = (existsSync(antidotesPath) ? readItems(readFileSync(antidotesPath, "utf8")) : []).filter((a) => a.id);
+  if (!antidotes.length) throw new Error("retire release: no archivist registered — never release into a hole");
+
+  const ledger = readJson(ledgerPath, { entries: [] });
+  const verified = [];
+  for (const a of antidotes) {
+    const out = ledger.entries.find((e) => e.kind === "teleport" && e.antidote === a.id && e.pile === id);
+    if (!out) throw new Error(`retire release: no flush to ${a.id} for tank ${id} — run bin/retire flush first`);
+    if (!/^key:sha256:[0-9a-f]{64}$/.test(a.signer || ""))
+      throw new Error(`retire release: no pinned signer for ${a.id} in _data/antidotes.yml — pin its keys/ledger.fpr (confirmed out-of-band) before any release`);
+
+    const receiptPath = path.join(receiptsDir, `${a.id}.json`);
+    if (!existsSync(receiptPath)) throw new Error(`retire release: no receipt at ${path.relative(root, receiptPath)} — bring back ${a.id}'s ledger/manifest.json`);
+    const receipt = JSON.parse(readFileSync(receiptPath, "utf8"));
+
+    // (1) the bytes hash to the attested head; (2) the head is signed by the PINNED archivist;
+    // (3) a custody-IN entry is bound to our custody-OUT by the same digest, admitting everything.
+    const digest = await contentId(receipt.entries || []);
+    if (receipt.head?.digest !== digest) throw new Error(`retire release: ${a.id} receipt digest mismatch — entries do not hash to the attested head (tampered or partial copy)`);
+    const v = await verifyAttested(receipt.head);
+    if (!v.ok) throw new Error(`retire release: ${a.id} receipt head signature does not verify`);
+    if (v.by !== a.signer) throw new Error(`retire release: ${a.id} receipt signed by ${v.by}, not the pinned ${a.signer}`);
+    const bound = (receipt.entries || []).find((e) => e.teleport?.digest === out.digest);
+    if (!bound) throw new Error(`retire release: ${a.id} receipt carries no custody-IN entry bound to our teleport digest ${out.digest.slice(0, 23)}…`);
+    const admitted = new Set(bound.admitted || []);
+    const missing = out.sent.filter((i) => !admitted.has(i));
+    if (missing.length) throw new Error(`retire release: ${a.id} admitted ${admitted.size} but ${missing.length} of ours are not among them ` +
+      `(queued: ${bound.queued ?? "?"}, refused: ${bound.refused ?? "?"}) — a held-back record is re-homed, never silently dropped`);
+    verified.push({ antidote: a.id, digest: out.digest, in_seq: bound.seq });
+  }
+
+  // every archivist proved custody — NOW the raw may go. The coarse report stays forever.
+  const sentIds = new Set(ledger.entries.filter((e) => e.kind === "teleport" && e.pile === id).flatMap((e) => e.sent));
+  let released = 0;
+  for (const r of archivedFor(archivedDir, tankDoors)) {
+    if (sentIds.has(await contentId(r.b))) { unlinkSync(r.file); released++; }
+  }
+  const prev = ledger.entries[ledger.entries.length - 1] || null;
+  const entry = { seq: ledger.entries.length, at, kind: "release", pile: id, released,
+    receipts: verified, prev_hash: prev ? prev.this_hash : null };
+  entry.this_hash = await contentId(entry);
+  ledger.entries.push(entry);
+  writeFileSync(ledgerPath, JSON.stringify(ledger, null, 2) + "\n");
+  walkStatus(keyringPath, id, "torn-down", "flushed", "flushed_at", at);
+  return { id, released, verified, report: path.join("archived", "reports", `${id}.json`) };
+}
+
 // ---- CLI --------------------------------------------------------------------------------------------------
 function parseArgs(argv) {
-  const out = {}; const map = { "--id": "id" };
+  const out = {}; const map = { "--id": "id", "--common": "common" };
   for (let i = 0; i < argv.length; i++) {
     const k = map[argv[i]];
     if (!k) throw new Error(`retire: unknown arg ${argv[i]}`);
@@ -279,9 +428,18 @@ async function main() {
   } else if (cmd === "teardown") {
     const r = await runTeardown(root, parseArgs(rest));
     console.error(`retire: '${r.id}' recorded torn-down. The remote gesture is yours:\n  - ${r.gesture.join("\n  - ")}`);
+  } else if (cmd === "flush") {
+    const r = await runFlush(root, parseArgs(rest));
+    for (const b of r.bundles) console.error(`retire: teleport for ${b.antidote}${b.reused ? " (already composed)" : ` — ${b.count} record(s)`} at ${b.file}, digest ${b.digest.slice(0, 23)}…`);
+    for (const s of r.skipped) console.error(`retire: SKIPPED ${s.antidote}: ${s.why}`);
+    console.error(`retire: ${r.deliver}`);
+  } else if (cmd === "release") {
+    const r = await runRelease(root, parseArgs(rest));
+    console.error(`retire: released '${r.id}' — ${r.released} raw record(s) left archived/ against ${r.verified.length} verified receipt(s); the report stays at ${r.report}; keyring walked to flushed`);
   } else {
     console.error("usage: bin/retire            # plan (writes retire-plan.json)\n" +
-      "       bin/retire deflate --id TANK\n       bin/retire teardown --id TANK");
+      "       bin/retire deflate --id TANK\n       bin/retire teardown --id TANK\n" +
+      "       bin/retire flush --id TANK [--common sha256:…]\n       bin/retire release --id TANK");
     process.exit(2);
   }
 }

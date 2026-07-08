@@ -93,6 +93,20 @@ Decisions the build took:
 - **Teardown is ordered and narrated.** `teardown` refuses before `deflated`, walks the
   keyring, and only *narrates* the remote gesture (prune-pile-history on the pile repo's feed
   branches, then archive the repo) — it never reaches out.
+- **Tally for sending; RECEIPT for releasing.** Our tee/flush ledgers prove *we sent*; only the
+  archivist's own attested ledger proves *they hold* — and raw leaves `archived/` on nothing
+  less. `bin/retire flush` composes the digest-bound `antidote.teleport/v1` per archivist
+  (digest = `contentId({seq, prev_digest, commitments})`, the receiving door's own
+  re-derivation; the COMMON is the bottle's *declared offer* from the registry — never computed
+  here). `bin/retire release` then requires, from **every** registered archivist, a copy of its
+  intake ledger that (1) hashes to its attested head, (2) verifies against the signer **pinned**
+  in `_data/antidotes.yml`, and (3) carries a custody-IN entry bound by the same digest with
+  everything admitted — a queued/refused record blocks release and is re-homed, never silently
+  dropped. Verified end-to-end against antidote's real `bin/intake-verify` + `bin/punch`: the
+  real attested ledger, verbatim, is the receipt that released the raw. The first registered
+  archivist is the `antidote` repo itself — unchartered today (intake queues/refuses) and its
+  ledger signer unminted, so the registry honestly blocks exactly the steps that need those
+  (release refuses on the unpinned signer; flush skips without a declared offer).
 
 ## Open questions carried forward (from #91, not resolved here)
 
