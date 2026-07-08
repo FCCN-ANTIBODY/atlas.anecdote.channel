@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# bin/admit — exec shim; the logic lives in admit.mjs (importable by test/admit.test.mjs).
+exec node "$(cd "$(dirname "$0")" && pwd)/admit.mjs" "$@"

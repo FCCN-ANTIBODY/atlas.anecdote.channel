@@ -193,6 +193,14 @@ else
   echo "[snapshot] SKIPPED — node not available"
 fi
 
+if command -v node >/dev/null 2>&1; then
+  echo "[admit] the registration door: stamped freshness, quell-vs-relist arbitration, ownership beside-not-over"
+  node "$(cd "$(dirname "$0")/.." && pwd)/test/admit.test.mjs" || { echo "FAIL: admit test" >&2; exit 1; }
+  echo "  ok: bin/admit resolves + narrates only; unstamped never supersedes; the merge stays the consent"
+else
+  echo "[admit] SKIPPED — node not available"
+fi
+
 echo "ALL TESTS PASSED"
 
 echo "[custody] the declared boundary holds (keys/custody.yml x bin/check-custody)"
