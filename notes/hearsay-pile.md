@@ -63,16 +63,52 @@ blast radius (one master compromised names *every* pile, where fresh-minted keys
 The convenience it buys — re-deriving instead of storing — is already provided by per-repo
 secrets. So: **no derivation scheme, and no new ideation phase needed.**
 
-## Lifecycle (the only distinctive operating choice)
+## Lifecycle (the only distinctive operating choice) — now built as `bin/retire`
 
-Live (collecting; discoverable via the keyring + the matcher) → quiet (~30d without a new
-answer — the pile earns retirement by going quiet, never by a clock alone) → **lossless
-deflate** to the archive (the tee has been running all along; the deflate is the final
-whole-yield flush) → teardown of the mailbox (`prune-pile-history` idiom: archive + reset,
-never rewrite) → `status:` on the keyring walks live → deflated → torn-down, so
-discoverability outlives the mailbox but not the archive. A fresh drop after teardown spawns
-a *new* pile for the same question — same `pile`/`poll` join key on the keyring, merged at
-aggregation (the stone skips again).
+Live (collecting; discoverable via the keyring + the matcher) → quiet → **lossless deflate**
+to `archived/` at the served root → teardown of the mailbox → `status:` on the keyring walks
+live → deflated → torn-down, so discoverability outlives the mailbox but not the archive. A
+fresh drop after retirement spawns a *new* tank for the same question — the keyring's
+live-filter in custody/hearsay/match makes the stone skip automatically.
+
+Decisions the build took:
+
+- **Quiet is read from the open tee ledger, not from ballot timestamps.** Lateness does not
+  exist (#86): an old-`ts` ballot arriving today is activity. What dates an arrival honestly
+  is the first tee-ledger entry that forwarded its content-id — since the tee runs "as soon as
+  we can", first-send ≈ arrival, and the transparency ledger doubles as the activity clock for
+  free. `ATLAS_QUIET_DAYS` unset ⇒ nothing is ever quiet (the honest default); ~30d is the
+  suggested policy, set by an operator, and quiet is only ever a *reading* — retirement still
+  waits on the judge/consent gesture (`retire-plan.json`, `needs:"judge"`).
+- **The default-hold guard is hard (#94).** A tank retires only when every record it holds
+  was teed to *every* registered archivist — and with no archivist registered, nothing retires
+  at all. `bin/retire deflate` re-verifies this itself: a judge cannot consent past a hole.
+  Never evict into a hole.
+- **Deflate moves whole.** Ballots move file-for-file from `_data/drop-archive/` to
+  `archived/<scope>/<poll>/` — the same content-addressed layout, now served at the root — and
+  the report (`archived/reports/<tank>.json`, `atlas.retired-keep/v1`) speaks only **log
+  bands** (the antidote heartbeat idiom: `0`, `1-9`, `10-99`…) over answers and log-spaced
+  arrival windows. Coarse standing in the open; the raw kept whole beside it, until a flush to
+  an archivist's own custody is proven.
+- **Teardown is ordered and narrated.** `teardown` refuses before `deflated`, walks the
+  keyring, and only *narrates* the remote gesture (prune-pile-history on the pile repo's feed
+  branches, then archive the repo) — it never reaches out.
+- **Tally for sending; RECEIPT for releasing.** Our tee/flush ledgers prove *we sent*; only the
+  archivist's own attested ledger proves *they hold* — and raw leaves `archived/` on nothing
+  less. `bin/retire flush` composes the digest-bound `antidote.teleport/v1` per archivist
+  (digest = `contentId({seq, prev_digest, commitments})`, the receiving door's own
+  re-derivation; the COMMON is the bottle's *declared offer* from the registry — never computed
+  here). `bin/retire release` then requires, from **every** registered archivist, a copy of its
+  intake ledger that (1) hashes to its attested head, (2) verifies against the signer **pinned**
+  in `_data/antidotes.yml`, and (3) carries a custody-IN entry bound by the same digest with
+  everything admitted — a queued/refused record blocks release and is re-homed, never silently
+  dropped. Verified end-to-end against antidote's real `bin/intake-verify` + `bin/punch`: the
+  real attested ledger, verbatim, is the receipt that released the raw. The first registered
+  archivist is the `antidote` repo itself — unchartered today (intake queues/refuses) and its
+  ledger signer unminted, so the registry honestly blocks exactly the steps that need those
+  (release refuses on the unpinned signer; flush skips without a declared offer).
+
+## Open questions carried forward (from #91, not resolved here)
 
 ## Many doors, one tank — and the front is the load balancer
 

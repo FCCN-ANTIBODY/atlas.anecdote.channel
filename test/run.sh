@@ -49,10 +49,23 @@ jq -e '[.[]|select(.candidate.pile_id=="orphan-hearsay")|.candidate.question]|so
   || fail "the door's question does not ride the candidate"
 jq -e '.[]|select(.candidate.question=="orphan/budget")|.candidate.provisioner=="self" and (.candidate.tell_url|length>0)' matches.json >/dev/null \
   || fail "hearsay candidate not marked self-kept / not addressed through the Atlas"
+# a retired door stops matching: findable in archived/, but never an invitation into a dead mailbox.
+cat >> "$HY/hearsay.yml" <<'YAML'
+- id: retired-tank
+  pile: "old"
+  poll: "gone"
+  scope: "colorado"
+  age_recipient: "age1lggyhqrw2nlhcxprm67z43rta597azn8gknawjehu9d9dl0jq3yqqvfafg"
+  provisioner: "self:atlas"
+  status: deflated
+YAML
+ATLAS_HEARSAY="$HY/hearsay.yml" ATLAS_MATCH_CMD="$W/yes" bin/match >/dev/null
+jq -e '[.[]|select(.candidate.pile_id=="retired-tank")]|length == 0' matches.json >/dev/null \
+  || fail "a deflated door surfaced as a match candidate"
 # and the honest default still holds for the union: no judge, no match.
 ATLAS_HEARSAY="$HY/hearsay.yml" bin/match >/dev/null
 [ "$(jq 'length' matches.json)" = 0 ] || fail "a hearsay candidate auto-matched without a judge"
-ok "doors are found when searched (question + provisioner:self ride); still nothing without a judge"
+ok "doors are found when searched (question + provisioner:self ride); retired doors are not; still nothing without a judge"
 
 echo "[3] registry + manifest parse"
 ruby -ryaml -e 'YAML.load_file("_data/needs.yml")' || fail "_data/needs.yml not valid YAML"
@@ -162,6 +175,14 @@ if command -v node >/dev/null 2>&1; then
   echo "  ok: bin/tee loops the antidote registry, loose-mail bundles + hash-linked open ledger, honest-off when empty"
 else
   echo "[tee] SKIPPED — node not available"
+fi
+
+if command -v node >/dev/null 2>&1; then
+  echo "[retire] the retirement of a keep: ledger-read quiet, default-hold, lossless deflate, ordered teardown"
+  node "$(cd "$(dirname "$0")/.." && pwd)/test/retire.test.mjs" || { echo "FAIL: retire test" >&2; exit 1; }
+  echo "  ok: bin/retire plans (needs a judge), never evicts into a hole, moves whole, walks the keyring in order"
+else
+  echo "[retire] SKIPPED — node not available"
 fi
 
 echo "ALL TESTS PASSED"
