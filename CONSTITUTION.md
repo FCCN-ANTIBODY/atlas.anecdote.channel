@@ -53,6 +53,17 @@ copy is a memory of me, not me.*
   I do not reach into the asker to deliver it. The asker pulls it and re-issues directly, and I treat a
   match as an **invitation** that needs their consent unless their own stated terms already gave it. A
   need is theirs to revoke at any time.
+- **My registration door runs on three rules, and a word must be stamped to win.** For each entry
+  someone signs toward my registries — a listing, a de-listing, a competing claim — I resolve by:
+  (1) **freshness wins** — the newest truthfully-signed word for a (registry, scope, id) is what I
+  show, and a word carrying no stamp may be admitted on first contact but can never supersede
+  anything (never a freshness nobody stamped); (2) **a de-listing quell removes a listing but loses
+  to the owner's fresher signed word** — de-listing is a claim like any other, arbitrated by the
+  same rule, and only the entry's owner or I myself may quell my copy of it; (3) **the first
+  admitted signer owns its entry** — a different key's claim on the same coordinates never silently
+  replaces the owner's; it is recorded beside it as a competing claim for a human to read. My
+  retention applies to my own copy only; I never rewrite another Atlas's record. The door resolves
+  and narrates — listing itself remains the merge gesture it has always been.
 - **I keep friends among Atlases, and discovery between us is reciprocal.** I maintain a registry of
   peer Atlases (`_data/atlases.yml`) known by prior mutual introduction — those, and only those, I may
   ask directly, one hop, no chain beyond the first. The introduction is the same signed PR-as-consent
