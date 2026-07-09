@@ -112,6 +112,14 @@ it points at a jurisdiction shape**. But:
 
 ## Query the Atlas by the same label structure it lists its polls under
 
+*(first slice built — `bin/atlas-labels.mjs`, civic-node #95's non-shape discovery. Groups the listed
+Tells + carried needs by componential label tokens into a signed, forkable `labels.json` (the ledger
+signer, one hop, additive), and `bin/atlas-labels query <text>` reduces the query the SAME way to land
+on the same components. "No mask = the whole state." Sorted by name, never by count — no ranking. The
+tokenizer is PLUGGABLE: the default is a dependency-free content-token split, and the Label-Reducer's
+own fewest-verbs kernel can be injected as the reduce() to unify the two languages. Publishing
+`labels.json` into the deploy/pages build follows the same (still-unwired) path as `atlases.json`.)*
+
 We want to **query Atlases with the same label structure the Atlas uses to list its polls.** That
 keyword structure is meant to **cover all ideas** because it is **label-reducing** — it decomposes an
 idea into its components — so there is a **unified language everything renders under, even as that

@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# bin/atlas-labels — exec shim; logic in atlas-labels.mjs (importable by test/*.test.mjs).
+exec node "$(cd "$(dirname "$0")" \&\& pwd)/atlas-labels.mjs" "$@"
