@@ -1,67 +1,77 @@
 # Orientation
 
-This repository is one **Atlas**: a directory of Tells meant to be copied. The README and
-`CONTRACT.md` cover *what* this is and *how* the wire works; `CONSTITUTION.md` is the binding
-law; `ROADMAP.md` is where this is going. This file is the why-shaped map — the ideas
-underneath that the others won't lead with.
+This repository is one **Atlas**: a directory of Tells meant to be copied — a directory, a
+gateway, a witness; never an authority, never an owner. It lists the Tells that front data-piles so
+the public can find them, reflects the deliberately coarse maps piles consent to place, and
+forwards what arrives at its drop door. It holds no key that decrypts anyone's data; a pile is
+reached *through* its Tell.
 
-## The thrust
+## Where the truth is, in reading order
 
-- **A directory, not an owner.** Atlas lists the **Tells** that front data-piles, and through them
-  the piles that group up behind them, so the public can find them. It never registers a pile
-  directly, never fronts pile data, and holds no key that decrypts anyone's data. A pile is reached
-  *through* its Tell. Keep that direction straight: Atlas indexes and reflects; it does not collect.
-- **Coarse on purpose; the line, not the gate.** Atlas reflects only the deliberately *coarse* maps a
-  pile consents to place (tiers, never raw per-respondent counts), and it sets **no strictness
-  threshold** a constituency must clear. Instead it keeps an **open line** to every constituency,
-  aggregated regardless of weight; a report earns force as it accumulates, in the open, over time. The
-  anti-popularity posture is the whole point — don't reintroduce a gate or a raw-count surface.
-- **Aggregation is the promise that makes listing mean something.** To be listed is to be addressable
-  and to **describe the transparency reports you publish**, because Atlas escalates affirmatively —
-  every report rolls into **all** the constituency aggregations it belongs to, not a chosen few.
-- **Replicable, and reciprocal among peers.** Fork it and stay a compatible Atlas. Peering is
-  *by getting you give*: a listed peer may **truthfully trigger your matcher** — one hop, by mutual
-  signed-PR consent, never a chain beyond the first, never a reach into anyone's repo.
+1. **Demos before docs.** The constellation's capability index is the demo shelf in
+   [`anecdote.channel`](https://github.com/FCCN-ANTIBODY/anecdote.channel) (`composer/*-demo.html`,
+   `viewer/`, `git-enough/`, `reducer/demo.mjs` — its `AGENTS.md` carries the table). Before
+   designing a capability, look for its demo: if the need category is represented, the machinery
+   exists — compose it. This repo's own executable truth is `test/run.sh` and the tools in `bin/`.
+2. **Open issues are urgent** — a live problem with the current implementation, ahead of the
+   deferred backlog. Roadmapping does *not* live in issues; it lives in the documents
+   (`ROADMAP.md`, `docs/atlas-roadmap.md`, civic-node `VISION.md`), and design writing is moving
+   back into repo files, off the public issue surface.
+3. **The deferred half lives in one place** — civic-node
+   [`OPEN-QUESTIONS.md`](https://github.com/FCCN-ANTIBODY/civic-node/blob/main/OPEN-QUESTIONS.md).
+   Record a deferral there rather than threading a caveat through the law or the spec.
+4. **The law, then the wire.** `CONSTITUTION.md` binds what Atlas does; `CONTRACT.md` pins the
+   wire; `docs/` holds the shaping notes (drop door, hearsay pile, snapshots, boundaries).
 
-## The shape of the code
+## The offline origin is the destination
 
-- **Data-free build; reflection at runtime.** The Jekyll/Pages build emits only a static shell + small
-  manifests (`/tells.json`, `/piles.json`, `/needs.json`). The browser fetches each pile's
-  Atlas-hosted map **at runtime** (`assets/atlas.js`), so a pile's ~10-minute data update needs no site
-  rebuild. Build-per-update doesn't scale; don't move data consumption back into the build.
-- **Branch-per-pile, served off the build.** A consenting pile *places* its map by pushing **signed**
-  commits to its own `pile/<scope>/<id>` branch; a Cloudflare Worker (`workers/piles-gateway/`) serves
-  `/piles/<id>/map.xml` from that branch, independent of Pages. The deploy ignores `pile/**`. Custody is
-  signed commits + the registry anchor in `_data/piles.yml`.
+Capability is migrating off GitHub and down to the operator's device — the anecdote.channel PWA,
+where signing happens (the device is the second factor). The workflows and composite actions here
+are being **kept as a declarative definition of the pipeline** — a configuration input an operator
+or the offline origin can read and mirror — not as the presumed runtime. Support them; don't
+deepen reliance on them. Whether or not GitHub holds the secrets to run a workflow, the offline
+origin does.
+
+## Invariants — violate these and you're building the wrong system
+
+1. **Neighbors, not a graph.** No central authority; one hop, no transitive reach; even the state
+   is just an Atlas. "Above" is a position, not an apex.
+2. **Verify-from-anyone; trust decides *action*, not *admission*.** Verify the bytes for anyone; a
+   local friend/lineage list gates whether you act.
+3. **Witness, not judge.** An Atlas attests that something *arrived* and is *signed*; it never
+   rules on genuine/fit and never blocks. Fitness is judged downstream against a pile's own
+   constitution.
+4. **Sign ≠ decrypt.** An Atlas may sign what it delivers while holding no key that decrypts a
+   pile — load-bearing for stand-in custody.
+5. **Honest defaults fire nothing.** `ATLAS_MATCH_CMD` unset ⇒ `needs-judgment`; custody
+   `mass=Infinity` ⇒ nothing rises; every plan is `needs:"judge"`. Automation stays opt-in.
+6. **Attest before you run.** New conduct goes into `CONSTITUTION.md` in plain words first (the
+   text-only attestation PR merged before `bin/drop` existed — that order is the rule).
+7. **Content-id is the join key.** The vendored core byte-mirrors anecdote's `composer/sign.mjs`,
+   so an Atlas's `contentId` equals a ballot's `ballotId`. Don't invent a second hash.
+8. **No new cryptography without cause.** Ed25519 (vendored), `age`, `ssh-keygen -Y`, `sha256`.
+   Compose.
+
+## Where intuition goes wrong here
+
+- **Data-free build; reflection at runtime.** The Jekyll build emits a static shell + small
+  manifests; the browser fetches each pile's map at runtime. Don't move data consumption back into
+  the build — build-per-update doesn't scale.
+- **Coarse on purpose; the line, not the gate.** Tiers, never raw per-respondent counts; no
+  strictness threshold a constituency must clear. Don't reintroduce a gate or a raw-count surface.
 - **Signed branches + a registry anchor are the spine.** Every gesture — a Tell listing itself, an
   Atlas peering, a pile placing a map — is a signed PR on an identity-named branch
-  (`tell/…`, `atlas/…`, `pile/…`) whose `signer` fingerprint is recorded in the open. The branch names
-  the claim; the signature proves it; the registry entry anchors it.
+  (`tell/…`, `atlas/…`, `pile/…`) anchored in `_data/*.yml`. Mirror this idiom; don't add machinery.
+- **Aggregation is not Atlas's job.** Cross-scope rollup belongs to the Antidote cascade; Atlas
+  keeps only the live coarse gauge of its own scope, and inbound digests belong to the pile's Tell.
 
-## The constellation (pile ↔ Tell ↔ Atlas)
+## Built here — reuse, don't rebuild
 
-- **Atlas is the reporting-law layer, at the top.** A pile registers *to a Tell*; a Tell registers
-  *to Atlas(es)*; an Atlas peers *with other Atlases*, one tier up again (`bin/register-atlas` mirrors
-  the Tell's `bin/register`). Atlas lists Tells and aggregates what they report; it is reached for
-  discovery, never for data.
-- **The pile is the principal; the Tell is its agent; Atlas is the law above them.** Constitutions bind
-  each layer in the open and constrain the next: a pile's constitution delegates to a Tell's; an Atlas's
-  constitution requires a Tell's to describe its transparency reports. Copyable constitutions are the
-  point — a few sound ones let one careful operator serve many.
-- **Inbound digests are never Atlas's job.** Collecting responses and delivering a pile its encrypted
-  digests belongs entirely to the pile's **Tell** (see
-  [`tell.anecdote.channel`](https://github.com/FCCN-ANTIBODY/tell.anecdote.channel) and
-  [`data-pile`](https://github.com/FCCN-ANTIBODY/data-pile)). Atlas only indexes Tells and reflects the
-  coarse maps the piles behind them place.
+`bin/drop.mjs` (the forward-first door: verify → dedup → turnIn/shrugQuellBack/floodOnward +
+content-addressed archive), `bin/custody.mjs` (plan-only, judge-gated stand-in-custody),
+`bin/match` (the matcher; `ATLAS_MATCH_CMD` ejected seam), `bin/atlas-index.mjs`/`bin/dump.mjs`
+(vendored attestation core + signed ledgers), `.github/actions/prune-pile-history` (lossless
+archive-and-reset teardown), `workers/piles-gateway/` (serves placed maps off `pile/**` branches).
 
-## Working here
-
-- **Mirror the constellation's idioms.** Signed branches + a registry anchor, PR-as-consent, data-free
-  build, runtime reflection. Prefer the patterns already in the sibling repos (`tell`, `data-pile`) over
-  new machinery, and keep dependencies near zero.
-- **Read the law, then the spec.** `CONSTITUTION.md` binds what Atlas does; `CONTRACT.md` pins the wire;
-  `ROADMAP.md` holds where this is going. What's deferred for the whole constellation — including
-  Atlas's Phase-B tooling, the summonable judge, and the live peering half — lives in one place, the
-  workspace's
-  [`OPEN-QUESTIONS.md`](https://github.com/FCCN-ANTIBODY/civic-node/blob/main/OPEN-QUESTIONS.md). Record
-  a deferral there rather than threading a caveat through the law or the spec.
+House test style: node stdlib, real crypto, `test/run.sh` — ssh-optional by design, so it runs on
+a constrained box; CI exercises the signature leg. Keep dependencies near zero.
