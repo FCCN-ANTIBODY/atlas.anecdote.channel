@@ -1,0 +1,54 @@
+name: "Gate · admit"
+
+# One Atlas GATE pass: enqueue newly-filed items, fold the arrived resolutions (constituents'
+# proof-of-work votes), admit those that reached a quorum of in-boundary/recent bodies, expire those
+# past decay. The Atlas WITNESSES, it does not judge — NO LLM, NO KEY. The tick logic is
+# anecdote.channel's composer/gate-tick.mjs, cloned here the way Tell's CI clones data-pile.
+#
+# Items and resolutions arrive PR-as-consent into _data/gate-inbox/{items,resolutions}; the cron sweeps
+# the inbox + queue on a cadence (a push trigger is deliberately avoided — this workflow commits back into
+# _data/gate-inbox when it clears consumed arrivals, which would self-trigger). This dogfoods bin/gate on
+# Atlas's own directory; an adopter picks its own cadence + knobs (GATE_QUORUM / GATE_RECENCY_MS / GATE_DECAY_MS).
+
+on:
+  schedule:
+    - cron: "17 * * * *"   # hourly, best-effort: fold + admit + decay
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gate
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Clone the anecdote engine (composer/gate-tick.mjs)
+        # Prefer the matching branch (engine + transport ship together), fall back to main.
+        run: |
+          ref="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          git clone --depth 1 --branch "$ref" https://github.com/FCCN-ANTIBODY/anecdote.channel ../anecdote.channel \
+            || git clone --depth 1 https://github.com/FCCN-ANTIBODY/anecdote.channel ../anecdote.channel
+      - name: One gate pass
+        env:
+          GATE_ENGINE: ../anecdote.channel
+        run: |
+          set -euo pipefail
+          # The Atlas's boundary — resolvers must prove presence in it. Read from atlas.yml's scope; this is
+          # equality today. Boundary-CONTAINMENT (a specific presence shape inside a coarse scope) is a
+          # refinement (civic-node OPEN-QUESTIONS territory), not wired here.
+          scope="$(ruby -ryaml -e 'c=YAML.load_file("atlas.yml") rescue {}; puts((c||{})["scope"].to_s)' 2>/dev/null || true)"
+          ATLAS_CONSTITUENCY="$scope" bin/gate
+      - name: Commit queue + admissions if changed
+        run: |
+          set -euo pipefail
+          git config user.name "atlas-gate"
+          git config user.email "gate@atlas.anecdote.channel"
+          git add _data/gate-queue.json admitted.json _data/gate-inbox 2>/dev/null || true
+          git diff --cached --quiet && { echo "gate: nothing changed"; exit 0; }
+          git commit -m "gate: fold + admit + decay"
+          git push

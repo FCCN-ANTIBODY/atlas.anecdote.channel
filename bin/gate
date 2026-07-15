@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# bin/gate — one Atlas GATE pass: enqueue newly-filed items, fold arrived resolutions, admit those that
+# reached a quorum of in-boundary/recent constituents, expire those past decay. The Atlas WITNESSES, it does
+# not judge — the admission verdict is the pinned label-reducer's, computed on constituents' devices; this
+# only tallies their proof-of-work quorum. NO LLM, NO KEY: the gate summons no judge (Atlas CONSTITUTION —
+# "I judge none of them; that reading belongs downstream"). The reducer is deterministic, so a minority
+# against-vote never blocks an honest quorum; disputes are caught by spot-audit + eviction, never a judge.
+#
+# The tick engine is anecdote.channel's composer/gate-tick.mjs (JSON in/out), a checkout provided at
+# $GATE_ENGINE — cloned in the workflow, the way Tell's CI clones data-pile. Items and resolutions arrive
+# PR-as-consent, gathered into the inbox (the merge is the append); this pass is pure over them.
+#
+#   bin/gate
+# Env:
+#   GATE_ENGINE          a checkout of anecdote.channel        (default ../anecdote.channel)
+#   GATE_QUEUE           the persisted pending queue           (default _data/gate-queue.json)
+#   GATE_INBOX           dir: items/*.json + resolutions/*.json (default _data/gate-inbox)
+#   GATE_ADMITTED        published admissions                  (default admitted.json)
+#   ATLAS_CONSTITUENCY   the Atlas's boundary — resolvers must prove presence in it (unset => not checked)
+#   GATE_QUORUM          bodies needed to admit                (default 2)
+#   GATE_RECENCY_MS      how fresh a resolver's presence must be (default 14400000 = 4h)
+#   GATE_DECAY_MS        how long an item may wait before it drains (default 604800000 = 7d)
+#   GATE_NOW             ISO timestamp override                (default: now)
+set -euo pipefail
+here="$(cd "$(dirname "$0")" && pwd)"; repo="$(cd "$here/.." && pwd)"
+engine="${GATE_ENGINE:-$repo/../anecdote.channel}"
+tick="$engine/composer/gate-tick.mjs"
+[ -f "$tick" ] || { echo "gate: engine not found at $tick (set GATE_ENGINE to an anecdote.channel checkout)" >&2; exit 1; }
+
+queue_file="${GATE_QUEUE:-$repo/_data/gate-queue.json}"
+inbox="${GATE_INBOX:-$repo/_data/gate-inbox}"
+admitted_file="${GATE_ADMITTED:-$repo/admitted.json}"
+now="${GATE_NOW:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
+
+# Gather every *.json under a dir into one JSON array (empty array when the dir is absent or empty).
+gather() { local d="$1"; if [ -d "$d" ] && ls "$d"/*.json >/dev/null 2>&1; then jq -s '.' "$d"/*.json; else echo '[]'; fi; }
+
+queue="$( [ -f "$queue_file" ] && cat "$queue_file" || echo '[]' )"
+items="$(gather "$inbox/items")"
+resolutions="$(gather "$inbox/resolutions")"
+
+knobs="$(jq -n \
+  --arg c "${ATLAS_CONSTITUENCY:-}" \
+  --argjson q "${GATE_QUORUM:-2}" \
+  --argjson rec "${GATE_RECENCY_MS:-14400000}" \
+  --argjson dec "${GATE_DECAY_MS:-604800000}" \
+  '{quorum:$q, recencyWindowMs:$rec, decayWindowMs:$dec} + (if $c=="" then {} else {atlasConstituency:$c} end)')"
+
+input="$(jq -n --argjson queue "$queue" --argjson items "$items" --argjson res "$resolutions" --arg now "$now" --argjson knobs "$knobs" \
+  '{queue:$queue, items:$items, resolutions:$res, now:$now, knobs:$knobs}')"
+
+out="$(printf '%s' "$input" | node "$tick")" || { echo "gate: tick failed" >&2; exit 1; }
+printf '%s' "$out" | jq -e 'has("queue") and has("admitted")' >/dev/null 2>&1 || { echo "gate: tick returned no result" >&2; exit 1; }
+
+# Persist the new pending queue.
+mkdir -p "$(dirname "$queue_file")"
+printf '%s\n' "$(printf '%s' "$out" | jq '.queue')" > "$queue_file"
+
+# Publish admissions: append this pass's, deduped by item id (the public /admitted.json the asker reads).
+prev="$( [ -f "$admitted_file" ] && cat "$admitted_file" || echo '[]' )"
+printf '%s\n' "$(printf '%s' "$out" | jq --argjson prev "$prev" \
+  '$prev + [.admitted[] | {id, target: .item.target, kind: .item.kind, text: .item.text, at: .item.at}] | unique_by(.id)')" > "$admitted_file"
+
+# The inbox is now folded into the queue (enqueue + ingest are idempotent, so this is hygiene, not
+# correctness): clear consumed arrivals so the inbox stays bounded.
+rm -f "$inbox"/items/*.json "$inbox"/resolutions/*.json 2>/dev/null || true
+
+echo "gate: admitted $(printf '%s' "$out" | jq '.admitted|length'), expired $(printf '%s' "$out" | jq '.expired|length'), pending $(printf '%s' "$out" | jq '.queue|length')" >&2
