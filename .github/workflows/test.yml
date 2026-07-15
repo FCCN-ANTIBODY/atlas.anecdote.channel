@@ -8,6 +8,7 @@ on:
   push:
     paths:
       - "bin/match"
+      - "bin/gate"
       - "bin/widget"
       - "bin/drop"
       - "bin/drop.mjs"
@@ -31,3 +32,5 @@ jobs:
       - uses: actions/checkout@v4
       - name: Smoke tests (matchmaker + widget + scan router)
         run: test/run.sh   # ruby (stdlib) + jq + node are preinstalled on the runner
+      - name: Gate transport (bin/gate, stub engine — no anecdote checkout)
+        run: test/gate.test.sh
