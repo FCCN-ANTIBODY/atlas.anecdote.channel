@@ -20,6 +20,8 @@ exclude:
   - Gemfile
   - Gemfile.lock
   - bin/
+  - scripts/           # the directory build; runs before jekyll, never published
+  - config/            # its inputs — sites.txt and the SAN list
   - test/
   - vendor/
   - workers/

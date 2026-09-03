@@ -1,0 +1,92 @@
+# sites.txt — the directory anecdote.channel publishes.
+#
+# HOSTNAMES, not repos. A site is a name that answers; how it is hosted is nobody's business
+# here. Reading a repo would assume GitHub forever and need a credential per org — a probe
+# assumes nothing and needs none. Registration is a PR from whoever runs the site; verification
+# is an ordinary HTTPS request anyone could make.
+#
+# Format: one hostname per line, plus optional space-separated flags, plus an optional `= label`.
+#   system     — verify it (TLS, liveness) but NEVER publish it. Infrastructure other software
+#                talks to, not a place to send a person.
+#   draft      — hold it back from the directory entirely.
+#   repo:<o/n> — resolve where this points FROM THE REPOSITORY (its Pages cname if it serves from
+#                Pages, else its `homepage` field). Preferred over a typed URL: the owner controls
+#                it, it survives them changing hosts, and a public repo needs no credential.
+#   was:<host>  — a name this entry used to answer at. Repeatable. From outside, a rename and a
+#                 deletion look identical — the host stops answering — so recording the old name
+#                 is what lets a consumer say "renamed to X" instead of "dead", and repair its own
+#                 links. Never remove one: the whole value is that it outlives the move.
+#   to:<url>    — a SHELL pointed at a literal URL, for something with no repo to read.
+#                Either way the listing says it leaves. Naming someone is not hosting them.
+# There is no `type:` flag, on purpose. What a thing IS reads off the category it sits in —
+# ANTIBODY at `antibody`, Voices at `voices`, FCPM at `media` — so a second word saying "journal"
+# beside the name is noise that can also disagree with the name above it.
+#   = <label>  — LAST RESORT ONLY. A name is taken from the thing itself (its <title>); a label
+#                here is a second copy of a name that already exists, and it goes stale the day
+#                they rename. Use it only where the source is unusable — e.g. a title carrying a
+#                tagline. Never for anything of ours.
+#
+# A listed site that is not answering yet still appears, unlinked — saying "soon" is honest and
+# useful; hiding it makes the directory silently incomplete.
+#
+# `@root` sets which level the APEX lists. anecdote.channel is the name people can remember and
+# say out loud, so it shows destinations rather than the top of the tree. Everything currently
+# lives under one state; widen this when that stops being true.
+@root colorado.anecdote.channel
+
+# `@place` reserves a place before anything is in it. It renders empty, and its TLS coverage is
+# checked exactly like an occupied one — a wildcard nobody can see is not a reservation, and the
+# cost of standing a place up is paid when it is claimed rather than when someone finally arrives.
+@place fort-collins.colorado.anecdote.channel
+@place longmont.colorado.anecdote.channel
+# Loveland: a journal site and nothing else — no Atlas, no Tell, no Antidote. Another ANTIBODY
+# under different branding, the way Voices is. When it arrives it declares `journal` and files
+# itself; nothing here needs changing but the removal of this comment.
+@place loveland.colorado.anecdote.channel
+@place wellington.colorado.anecdote.channel
+# Blank lines and `#` comments ignored.
+
+# --- system: machinery, verified but never advertised to a person --------------------
+tell.anecdote.channel                            system
+atlas.anecdote.channel                           system
+
+# --- destinations we run ---------------------------------------------------------------
+# `north` is a region label sitting at city level.
+antibody.fort-collins.colorado.anecdote.channel
+north.voices.fort-collins.colorado.anecdote.channel  was:voices.north.colorado.anecdote.channel
+
+# --- trade: what you can buy here, what you can sell here -------------------------------
+# Naturally plural — nobody is THE business of a place — so it takes monikers from the start
+# rather than pretending to a canonical occupant.
+discoverywritten.trade.fort-collins.colorado.anecdote.channel  repo:DiscoveryWritten/discoverywritten.com
+
+# --- shells: names we assert over things we do not run ----------------------------------
+# The name is the claim. Putting a neighbour in the same predictable place as our own nodes
+# says this is a directory ON PURPOSE rather than a list of what we happen to own. Each one
+# announces that it leaves — being handed off is fine, being handed off silently is not.
+#
+# FCPM: an org repo, already served — on Cloudflare rather than Pages, which is exactly why the
+# target is read from the repo's `homepage` rather than typed. They move hosts, this follows.
+# Drop the `repo:` on the day the canonical name serves it directly; nothing else changes.
+public.media.fort-collins.colorado.anecdote.channel  repo:FC-Public-Media/fcpublicmedia.org
+
+# THE FIVE-PART SLOT IS FOR CIVIC NODES ONLY. A node speaks FOR a place — it is the thing
+# participating in that city's Atlas/Tell infrastructure — which is why antibody.fort-collins
+# reads correctly. Everything that does not speak for the place lives inside a category, at six.
+#
+# So there is no "canonical occupant" shortcut at five any more. `public` is the canonical
+# MONIKER for public media, the way `police` would be for a department: one word that says what
+# something is rather than what it is called. `media.fort-collins` is left free to become the
+# category's own listing.
+fm.media.fort-collins.colorado.anecdote.channel               repo:tiliv/fm
+
+# fcreport.org sits behind a bot challenge, so its title cannot be read and the label is supplied
+# here — the one legitimate use for a config label. Live for a person; unreadable to us.
+fcreport.media.fort-collins.colorado.anecdote.channel  to:https://fcreport.org  = The Fort Collins Report
+artist-lockers.media.fort-collins.colorado.anecdote.channel   repo:tiliv/artist-lockers
+
+# Longmont Public Media: not ours in any sense, and not rehosted. The canonical name exists so
+# the chain is predictable; it leads out to them, and it says so.
+# Their title carries a tagline ("… – Longmont's Public Access TV"), so this is the one entry
+# that names itself here rather than being read.
+public.media.longmont.colorado.anecdote.channel  to:https://longmontpublicmedia.org  = Longmont Public Media
