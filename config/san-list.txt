@@ -1,0 +1,69 @@
+# san-list.txt — source of truth for the Cloudflare ACM advanced certificate.
+#
+# This file lists every hostname the edge certificate must cover. The reconcile
+# Action (.github/workflows/acm-sync.yml -> scripts/reconcile-acm.sh) keeps the
+# Cloudflare advanced certificate pack(s) in sync with this list. Cloudflare
+# issues and auto-renews; this repo only decides WHICH names are covered.
+#
+# RULES (enforced by scripts/reconcile-acm.sh — violations abort the run):
+#   * The apex `anecdote.channel` must be present (Cloudflare requires it).
+#   * A TLS wildcard matches exactly ONE label. There is no `*.*` wildcard.
+#     To cover a deep name like  moniker.fort-collins.colorado.anecdote.channel
+#     you need a wildcard at the level just above the varying leaf:
+#         *.fort-collins.colorado.anecdote.channel
+#     ...and, if names also vary one level shallower, a wildcard there too:
+#         *.colorado.anecdote.channel        (covers fort-collins.colorado....)
+#         *.anecdote.channel                 (covers colorado.anecdote.channel)
+#   * Only single-label wildcards (leading `*.`). `*.*.x` or a bare `*` are rejected.
+#   * Max 50 hosts per pack (the apex counts). Past ~49 entries, shard across
+#     additional advanced packs — see the script header for how.
+#
+# Format: one hostname per line. Blank lines and `#` comments are ignored.
+# Whitespace is trimmed and entries are lowercased + de-duplicated.
+
+# --- apex + state-level leaves -------------------------------------------------
+anecdote.channel
+*.anecdote.channel
+
+# --- the Floor: Tell's wildcard-served pile rooms (#93; tell repo docs/floor.md) -
+# <pile-name>.tell.anecdote.channel — the leaf label IS the pile name. One label
+# per wildcard, so *.anecdote.channel covers the bare tell host but not names
+# under it.
+*.tell.anecdote.channel
+
+# --- per-state wildcards (covers <city>.<state>.anecdote.channel) --------------
+*.colorado.anecdote.channel
+
+# --- per-city / per-region wildcards (covers <leaf>.<region>.<state>.anecdote.channel) ---
+# `north` is a REGION label sitting at the same DNS level as a city — deliberately not
+# `northern-colorado.colorado`, which stutters. The per-level rule is identical either way:
+# *.colorado.anecdote.channel covers `north.colorado...`, but the varying leaf beneath it
+# (e.g. voices.north.colorado...) needs its own wildcard.
+*.fort-collins.colorado.anecdote.channel
+# A shell's canonical name needs coverage exactly like our own: it is served from this zone
+# (as a redirect out), so a visitor reaching it meets this certificate first.
+*.longmont.colorado.anecdote.channel
+
+# NOTE ON COST. Reserving the five-part slot for civic nodes means a category occupant is always
+# at six, so every (place, category) that holds anything needs its own wildcard — even a category
+# with exactly one occupant. That gives up the singleton exemption that used to make a lone
+# occupant free, and it is the multiplicative term: places x categories-in-use.
+#
+# It buys a five-part slot that means one thing, and monikers that can never shadow a category
+# word because they cannot reach that level. Worth it while the numbers are small; worth
+# re-checking when a place routinely holds four or five categories.
+
+# Reserved, nothing in them yet. A place costs ONE wildcard whether it holds one site or forty —
+# which is the whole reason places are the unit and categories are not.
+*.loveland.colorado.anecdote.channel
+*.wellington.colorado.anecdote.channel
+
+# --- per-category wildcards: only where plurality actually arrived ----------------------
+# A category with ONE occupant costs nothing — media.fort-collins… is already covered by
+# *.fort-collins.colorado.anecdote.channel. These exist because a second occupant showed up and
+# needed a moniker beneath the category. Never add one speculatively: the whole point of the
+# demand-driven rule is that the vocabulary is free and only plurality is billed.
+*.media.fort-collins.colorado.anecdote.channel
+*.trade.fort-collins.colorado.anecdote.channel
+*.voices.fort-collins.colorado.anecdote.channel
+*.media.longmont.colorado.anecdote.channel

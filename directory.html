@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>the directory</title>
+<!-- atlas.anecdote.channel/directory.html — THE DIRECTORY, WHICH IS ATLAS'S OFFICE.
+     It was built and served by anecdote.channel because that is where the deploy hook happened to
+     be, not by design: a directory of sites is the same office as the directory of Tells already
+     here. anecdote now embeds this page rather than generating it, which is what lets that
+     repository go back to being served exactly as committed with no build at all.
+     Written to be IFRAMED: no chrome, no navigation, nothing that assumes it is the whole page. -->
+<style>
+  /* The page's own use of the design system. Tokens come from /assets/ds/ — never redefined here.
+     Two voices, no third (typography.css): Playfair says the loud thing, Space Mono says the small
+     true thing underneath it. So a DESTINATION is set in serif — it is the name you would say out
+     loud — and everything structural (the levels, the notes) is mono. */
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; background: var(--paper); }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--paper);
+    color: var(--text-body);
+    font-family: var(--font-mono);
+    font-size: var(--mono-body);
+    line-height: var(--leading-body);
+  }
+
+  /* ---- the masthead: the one loud thing on a page that holds almost nothing ---------- */
+  .masthead {
+    padding: var(--space-8) var(--gutter) var(--space-5);
+    border-bottom: var(--rule) solid var(--border);
+  }
+  .wordmark {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: var(--weight-display);
+    font-size: var(--display-hero);
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-display);
+    color: var(--text-strong);
+    text-shadow: var(--shadow-display);
+  }
+  /* The apex is the name people say out loud; the full host is the small true thing under it. */
+  .eyebrow {
+    margin: var(--space-4) 0 0;
+    font-size: var(--text-eyebrow);
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* ---- the directory ----------------------------------------------------------------- */
+  /* A place heading flush left; categories in a fixed left column that never moves; the names
+     they hold in the column beside it. One name reads as a row across, several stack on the
+     right while the category stays put. */
+  /* The content keeps the full gutter. Headers reach OUT of it to the left; nothing pushes the
+     names inward, because column width is the one thing here worth spending. */
+  /* The one knob for how thick the black is. */
+  :root { --hdr-h: .5rem; --rule-cat: clamp(10px, calc(var(--gutter) - 26px), 70px); }
+
+  /* THE HEADER WRAPPER OWNS THE BOX.
+     .hdr sets the height — one number, every level, so every black box is the same height.
+     .hdr-N sets the left border — wider the smaller the header, which is what indents it.
+     The header element inside is not touched: no margins, no line-height, no alignment. */
+  .hdr {
+    height: var(--hdr-h);
+    display: flex;
+    align-items: center;
+    margin-left: calc(var(--gutter) * -1);   /* border starts at the screen edge */
+    padding-left: .5rem;
+  }
+  /* THE BLACK LIVES ENTIRELY IN THE GUTTER AND NEVER LEAVES IT. A header's text lands at most
+     on the content line, never past it — these hang LEFT of the content, they do not indent into
+     it. So the widest a border may be is the gutter itself, less the padding. */
+  /* The category rule GROWS WITH THE GUTTER, because it lives in it. Derived from --gutter rather
+     than given its own breakpoints, so the invariant above holds by construction at every width:
+     the bar is always the gutter less 26px, which is always less than the gutter less the .5rem
+     padding, so it can never reach the content line no matter how the gutter is retuned.
+     Stays stubby at 10px through mobile and small tablet (gutter <= 36px, i.e. up to ~720px wide),
+     then opens out — ~46px on a 1440px laptop, reaching its 70px ceiling exactly as the gutter
+     tops out. Same clamp() idiom as the type scale, so the page still changes uniformly. */
+  .hdr-1 { border-left: 4px solid var(--ink); margin-bottom: var(--space-5); }
+  .hdr-2 { border-left: var(--rule-cat) solid var(--ink); }
+  .hdr > * { margin: 0; }
+
+  /* No max-width. --measure is 64ch, a READING width for mono body text, and this is a directory
+     listing set in display serif — a long site name wrapped early against a prose measure while
+     the desktop viewport sat half empty. The gutter already holds the page off the edge. */
+  #directory { padding: var(--space-7) var(--gutter) var(--space-9); }
+  #directory[hidden] { display: none; }
+
+  /* A city is a divider and a quiet label, not a headline. It was set in the display serif at
+     the same size as the site names, so it read as another clickable thing — and there is nothing
+     to click: we do not serve a directory per city yet. Mono, and it stops pretending. */
+  .place-block + .place-block {
+    margin-top: var(--space-7);
+    border-top: 1px solid var(--border-faint);
+    padding-top: var(--space-7);
+  }
+  .place-name {
+    font-family: var(--font-mono);
+    font-weight: var(--weight-mono-bold);
+    font-size: var(--mono-lead);
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+    color: var(--text-strong);
+  }
+  /* A solid rule hanging left of the label. The longer the bar, the higher the header — the
+     hierarchy is a length you can see at a glance rather than a font size you have to compare. */
+
+  .rows {
+    display: grid;
+    grid-template-columns: minmax(7rem, max-content) 1fr;
+    column-gap: var(--space-6);
+    row-gap: var(--space-4);
+    align-items: baseline;
+  }
+  /* The category. Mono, small-caps, and the same left edge on every row in the block. */
+  .cat {
+    font-family: var(--font-mono);
+    font-size: var(--text-eyebrow);
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .items { display: flex; flex-direction: column; gap: var(--space-4); }
+  .item { display: block; }
+
+  .place, .soon {
+    font-family: var(--font-display);
+    font-size: var(--display-3);
+    line-height: var(--leading-snug);
+  }
+  a.place { color: var(--text-strong); text-decoration: none; }
+  a.place:hover { text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: var(--rule); }
+  a.place:focus-visible { outline: var(--rule) solid var(--border); outline-offset: 4px; }
+  .soon { color: var(--text-muted); }
+
+  .note, .out, .also {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: var(--mono-caption);
+    color: var(--text-muted);
+    margin-top: var(--space-1);
+  }
+  .note, .also { letter-spacing: var(--tracking-caps); text-transform: uppercase; }
+  .also { color: var(--ink-faint); }
+
+  @media (max-width: 34rem) {
+    /* Too narrow for two columns: the category becomes a heading over its names, which keeps
+       the same reading order rather than inventing a second layout. */
+    .rows { grid-template-columns: 1fr; row-gap: var(--space-2); }
+    .cat { padding-top: var(--space-3); }
+    .items { margin-bottom: var(--space-3); }
+  }
+
+  /* ---- the standing-by fallback + ?diag readout -------------------------------------- */
+  #heading {
+    display: block;
+    padding: var(--space-7) var(--gutter);
+    font-family: var(--font-mono);
+    font-size: var(--mono-small);
+    color: var(--text-muted);
+    white-space: pre;
+  }
+  #heading[hidden] { display: none; }
+
+  /* Diagnostics run offscreen (see the ?diag block below). */
+  iframe[id] { position: fixed; left: -100vw; width: 100vw; height: 100vh; border: 0; }
+</style>
+<body>
+<nav id="directory"></nav>
+
+<!-- THE LISTING, AS HTML FRAGMENTS. Not a Liquid loop and not a build product: these are ordinary
+     <template> elements, the browser's own template syntax, cloned once per row at runtime.
+
+     The point of this whole apparatus is that you can publish shitty source files and get a
+     website with no build. So this page IS the source. It is served exactly as committed, and it
+     interprets itself when it loads. Liquid's job here is includes — which is how an iframe gets
+     composed — and iteration is HTML's job, because HTML already has a way to say "this shape,
+     repeated". -->
+<template id="t-place">
+  <section class="place-block">
+    <div class="hdr hdr-1"><h2 class="place-name"></h2></div>
+    <p class="reserved">reserved — nothing here yet</p>
+    <div class="rows"></div>
+  </section>
+</template>
+<template id="t-row">
+  <div class="hdr hdr-2"><div class="cat"></div></div>
+  <div class="items"></div>
+</template>
+<template id="t-entry">
+  <div class="item">
+    <a class="place"></a>
+    <span class="soon"></span>
+    <small class="note">soon</small>
+    <small class="also"></small>
+    <small class="out"></small>
+  </div>
+</template>
+<code id="heading" hidden></code>
+
+<script type="module">
+  import { entryParts } from "/directory.mjs";
+
+  // BIND TO THE PAGE AND INTERPRET IT. That is the whole job. This file is served exactly as it
+  // was committed — no build ran, nothing was pre-rendered, and there is no artifact anywhere.
+  // Publishing here means committing a source file.
+  //
+  // Iteration is HTML's: <template> cloned per row. The data is data. Nothing here reimplements a
+  // templating language to do what the browser already does.
+  const nav = document.getElementById("directory");
+  const eyebrow = document.getElementById("eyebrow");
+  eyebrow.textContent =
+    location.hostname.endsWith("anecdote.channel") ? location.hostname : "anecdote.channel";
+
+  const frag = (id) => document.getElementById(id).content.cloneNode(true);
+  // REMOVE, never hide: `hidden` is a UA display rule any author `display:` outranks.
+  const drop = (r, sel) => { const el = r.querySelector(sel); if (el) el.remove(); };
+  const put = (r, sel, t) => { const el = r.querySelector(sel); if (el && t != null) el.textContent = t; return el; };
+
+  try {
+    const res = await fetch("/sites.json", { cache: "no-cache" });
+    if (!res.ok) throw new Error();
+    const { listing = [] } = await res.json();
+
+    for (const place of listing) {
+      const p = frag("t-place");
+      p.querySelector(".place-name").textContent = place.name;
+      const rows = p.querySelector(".rows");
+      if (place.rows.length) drop(p, ".reserved");
+      for (const row of place.rows) {
+        const r = frag("t-row");
+        r.querySelector(".cat").textContent = row.category;
+        const items = r.querySelector(".items");
+        for (const e of row.entries) {
+          const it = frag("t-entry");
+          const parts = entryParts(e);
+          if (parts.link) {
+            const a = put(it, ".place", e.name);
+            a.href = e.href;
+            if (e.leaves) a.rel = "noopener";
+          } else {
+            put(it, ".soon", e.name);
+          }
+          if (!parts.link) drop(it, ".place");
+          if (!parts.soon) { drop(it, ".soon"); drop(it, ".note"); }
+          if (parts.also) put(it, ".also", e.also); else drop(it, ".also");
+          if (parts.out) put(it, ".out", e.dest + (e.shielded ? "  shielded" : "")); else drop(it, ".out");
+          items.append(it);
+        }
+        rows.append(r);
+      }
+      nav.append(p);
+    }
+  } catch {
+    // Origin unreachable, or no data. The masthead stands by — a page that says less rather than
+    // a page that lies.
+    eyebrow.textContent = "Please Stand By.";
+  }
+</script>
+</body>
